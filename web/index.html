@@ -139,6 +139,14 @@
       line-height: 1.35;
     }
 
+    .hint strong {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--text);
+      font-size: clamp(16px, 3vw, 24px);
+      letter-spacing: -0.03em;
+    }
+
     @media (max-width: 640px) {
       header, footer { align-items: flex-start; }
       .keys { gap: 12px; }
@@ -160,7 +168,7 @@
     </section>
 
     <footer>
-      <div class="hint">First finger = Z<br>Second finger = X<br>Third finger ignored</div>
+      <div class="hint"><strong>Touch anywhere on the screen</strong>First finger = Z<br>Second finger = X<br>Third finger ignored</div>
     </footer>
   </main>
 
