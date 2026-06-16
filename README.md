@@ -49,7 +49,7 @@ bit 1 = X
 
 - The server releases both keys when a WebSocket disconnects or errors.
 - The server releases both keys during graceful shutdown.
-- The phone page sends mask `0` on blur, hidden visibility, page hide, unload, and the `Release All` button.
+- The phone page sends mask `0` on blur, hidden visibility, page hide, and unload.
 - Invalid WebSocket messages are ignored safely.
 
 ## Windows SendInput Notes
@@ -61,5 +61,6 @@ The `INPUT` struct in `sendinput_windows.go` is laid out for 64-bit Windows as:
 - `type` as `uint32`
 - explicit 4-byte padding so the union payload is 8-byte aligned
 - `KEYBDINPUT` with `uintptr` for `dwExtraInfo`
+- extra trailing padding so the `INPUT` union is large enough for `MOUSEINPUT`
 
-That gives the expected 64-bit layout: 8-byte header/alignment plus a 24-byte `KEYBDINPUT`, for a 32-byte `INPUT`. This is the important alignment detail for reliable `SendInput` calls on Windows amd64.
+That gives the expected 64-bit layout: 8-byte header/alignment plus a 32-byte union payload, for a 40-byte `INPUT`. This is the important alignment detail for reliable `SendInput` calls on Windows amd64.
