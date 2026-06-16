@@ -52,8 +52,8 @@ func main() {
 	for _, ip := range lanIPs() {
 		log.Printf("LAN URL:   http://%s%s", ip, addr)
 	}
-	log.Println("Server is ready.")
-	log.Println("Open the LAN URL on your phone.")
+	log.Println("Server is ready")
+	log.Println("Open the LAN URL on your phone")
 	log.Println("Waiting for WebSocket client...")
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
