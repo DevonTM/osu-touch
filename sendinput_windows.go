@@ -5,7 +5,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"log"
 	"unsafe"
 
 	"golang.org/x/sys/windows"
@@ -36,11 +35,6 @@ type keyboardInput struct {
 	Flags     uint32
 	Time      uint32
 	ExtraInfo uintptr
-}
-
-func init() {
-	log.Printf("Win32 INPUT layout: sizeof(INPUT)=%d, offsetof(KEYBDINPUT)=%d, sizeof(KEYBDINPUT)=%d",
-		unsafe.Sizeof(input{}), unsafe.Offsetof(input{}.Ki), unsafe.Sizeof(keyboardInput{}))
 }
 
 func pressKey(vk uint16) error {
