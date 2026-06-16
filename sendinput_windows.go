@@ -19,6 +19,7 @@ const (
 )
 
 var procSendInput = windows.NewLazySystemDLL("user32.dll").NewProc("SendInput")
+var procSetConsoleTitle = windows.NewLazySystemDLL("kernel32.dll").NewProc("SetConsoleTitleW")
 
 // input mirrors Win32 INPUT on 64-bit Windows. The union must be large enough
 // for MOUSEINPUT too, so cbSize is 40 bytes even when sending KEYBDINPUT.
@@ -35,6 +36,14 @@ type keyboardInput struct {
 	Flags     uint32
 	Time      uint32
 	ExtraInfo uintptr
+}
+
+func setConsoleTitle(title string) {
+	ptr, err := windows.UTF16PtrFromString(title)
+	if err != nil {
+		return
+	}
+	_, _, _ = procSetConsoleTitle.Call(uintptr(unsafe.Pointer(ptr)))
 }
 
 func pressKey(vk uint16) error {

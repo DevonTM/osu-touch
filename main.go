@@ -31,6 +31,8 @@ var (
 )
 
 func main() {
+	setConsoleTitle("osu-touch")
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", indexHandler)
 	mux.HandleFunc("/ws", wsHandler)
@@ -40,11 +42,19 @@ func main() {
 		Handler:           mux,
 		ReadHeaderTimeout: 5 * time.Second,
 	}
+	listener, err := net.Listen("tcp", addr)
+	if err != nil {
+		log.Fatalf("HTTP listen error: %v", err)
+	}
 
+	log.Println("osu-touch - wireless touch keypad for osu!")
 	log.Printf("Local URL: http://localhost%s", addr)
 	for _, ip := range lanIPs() {
 		log.Printf("LAN URL:   http://%s%s", ip, addr)
 	}
+	log.Println("Server is ready.")
+	log.Println("Open the LAN URL on your phone.")
+	log.Println("Waiting for WebSocket client...")
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -60,8 +70,7 @@ func main() {
 		}
 	}()
 
-	log.Printf("Listening on %s", addr)
-	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+	if err := server.Serve(listener); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		log.Fatalf("HTTP server error: %v", err)
 	}
 
