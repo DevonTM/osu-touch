@@ -30,7 +30,7 @@ var (
 
 func main() {
 	setConsoleTitle(appName)
-	log.Printf("%s %s - wireless touch keypad for osu!", appName, appVersion)
+	log.Printf("%s v%s - wireless touch keypad for osu!", appName, appVersion)
 
 	keyInput = input.NewController(inputKeys())
 	log.Printf("Input keys: %s / %s", keyInput.Keys().First.Label, keyInput.Keys().Second.Label)
