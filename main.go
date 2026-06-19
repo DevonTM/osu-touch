@@ -14,7 +14,7 @@ import (
 	"syscall"
 	"time"
 
-	"osu-touch/input"
+	"github.com/DevonTM/osu-touch/input"
 )
 
 //go:embed web/index.html

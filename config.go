@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"osu-touch/input"
+	"github.com/DevonTM/osu-touch/input"
 )
 
 const (

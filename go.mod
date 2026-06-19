@@ -1,4 +1,4 @@
-module osu-touch
+module github.com/DevonTM/osu-touch
 
 go 1.26.4
 
