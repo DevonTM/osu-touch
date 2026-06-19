@@ -168,7 +168,7 @@
     </section>
 
     <footer>
-      <div class="hint"><strong>Touch anywhere on the screen</strong>First finger = Z<br>Second finger = X<br>Third finger ignored</div>
+      <div class="hint"><strong>Touch anywhere on the screen</strong>Each new touch alternates Z / X<br>Release the active touch to release the key</div>
     </footer>
   </main>
 
@@ -177,20 +177,20 @@
       const surface = document.getElementById('surface');
       const connection = document.getElementById('connection');
       const keyEls = [document.getElementById('zKey'), document.getElementById('xKey')];
-      const slots = [null, null];
+      const simultaneousGuardMs = 10;
+      const heldPointers = new Set();
       let socket = null;
       let lastSentMask = -1;
       let currentMask = 0;
       let reconnectTimer = 0;
+      let activePointer = null;
+      let nextMask = 1;
+      let burstStartedAt = 0;
 
       function setConnection(connected) {
         connection.textContent = connected ? 'connected' : 'disconnected';
         connection.classList.toggle('connected', connected);
         connection.classList.toggle('disconnected', !connected);
-      }
-
-      function maskFromSlots() {
-        return (slots[0] !== null ? 1 : 0) | (slots[1] !== null ? 2 : 0);
       }
 
       function render(mask) {
@@ -211,8 +211,9 @@
       }
 
       function clearSlots() {
-        slots[0] = null;
-        slots[1] = null;
+        heldPointers.clear();
+        activePointer = null;
+        burstStartedAt = 0;
         sendMask(0, true);
       }
 
@@ -239,37 +240,41 @@
         });
       }
 
-      function findSlot(pointerId) {
-        return slots.findIndex((id) => id === pointerId);
-      }
-
       surface.addEventListener('pointerdown', (event) => {
         if (event.pointerType !== 'touch' && event.pointerType !== 'mouse') return;
         event.preventDefault();
-        if (findSlot(event.pointerId) !== -1) return;
-        const empty = slots.findIndex((id) => id === null);
-        if (empty === -1) return;
+        if (heldPointers.has(event.pointerId)) return;
+        const now = performance.now();
+        const wasIdle = heldPointers.size === 0;
         navigator.vibrate?.(0);
-        slots[empty] = event.pointerId;
-        surface.setPointerCapture?.(event.pointerId);
-        sendMask(maskFromSlots());
+        heldPointers.add(event.pointerId);
+
+        if (wasIdle) {
+          burstStartedAt = now;
+        } else if (now - burstStartedAt <= simultaneousGuardMs) {
+          return;
+        }
+
+        activePointer = event.pointerId;
+        sendMask(nextMask);
+        nextMask = nextMask === 1 ? 2 : 1;
       });
 
       surface.addEventListener('pointermove', (event) => {
-        if (findSlot(event.pointerId) !== -1) event.preventDefault();
+        if (heldPointers.has(event.pointerId)) event.preventDefault();
       });
 
       function releasePointer(event) {
         event.preventDefault();
-        const slot = findSlot(event.pointerId);
-        if (slot === -1) return;
-        slots[slot] = null;
-        sendMask(maskFromSlots());
+        if (!heldPointers.delete(event.pointerId)) return;
+        if (heldPointers.size === 0) burstStartedAt = 0;
+        if (activePointer !== event.pointerId) return;
+        activePointer = null;
+        sendMask(0);
       }
 
       surface.addEventListener('pointerup', releasePointer);
       surface.addEventListener('pointercancel', releasePointer);
-      surface.addEventListener('lostpointercapture', releasePointer);
 
       document.addEventListener('visibilitychange', () => {
         if (document.hidden) clearSlots();
