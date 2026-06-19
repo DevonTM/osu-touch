@@ -171,12 +171,12 @@
     </header>
 
     <section class="keys" aria-label="Touch state">
-      <div id="zKey" class="key"><div><strong>Z</strong><span>up</span></div></div>
-      <div id="xKey" class="key"><div><strong>X</strong><span>up</span></div></div>
+      <div id="zKey" class="key"><div><strong>{{.Key1}}</strong><span>up</span></div></div>
+      <div id="xKey" class="key"><div><strong>{{.Key2}}</strong><span>up</span></div></div>
     </section>
 
     <footer>
-      <div class="hint"><strong>Touch anywhere on the screen</strong>Each new touch alternates Z / X<br>Release the active touch to release the key</div>
+      <div class="hint"><strong>Touch anywhere on the screen</strong>Each new touch alternates {{.Key1}} / {{.Key2}}<br>Release the active touch to release the key</div>
     </footer>
   </main>
 

@@ -1,13 +1,18 @@
 package main
 
 import (
+	"bytes"
+	"html/template"
 	"log"
 	"net/http"
 
 	"github.com/coder/websocket"
-
-	"osu-touch/input"
 )
+
+type indexTemplateData struct {
+	Key1 string
+	Key2 string
+}
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
@@ -22,7 +27,28 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "index.html not embedded", http.StatusInternalServerError)
 		return
 	}
-	_, _ = w.Write(data)
+	if err := renderIndex(w, data); err != nil {
+		log.Printf("Template render error: %v", err)
+		http.Error(w, "index.html render error", http.StatusInternalServerError)
+	}
+}
+
+func renderIndex(w http.ResponseWriter, data []byte) error {
+	keys := keyInput.Keys()
+	tmpl, err := template.New("index.html").Parse(string(data))
+	if err != nil {
+		return err
+	}
+
+	var page bytes.Buffer
+	if err := tmpl.Execute(&page, indexTemplateData{
+		Key1: keys.First.Label,
+		Key2: keys.Second.Label,
+	}); err != nil {
+		return err
+	}
+	_, err = w.Write(page.Bytes())
+	return err
 }
 
 func wsHandler(w http.ResponseWriter, r *http.Request) {
@@ -59,7 +85,7 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 			inputMu.Unlock()
 			return
 		}
-		if err := input.ApplyMask(currentMask, newMask); err != nil {
+		if err := keyInput.ApplyMask(currentMask, newMask); err != nil {
 			log.Printf("SendInput error: %v", err)
 		}
 		currentMask = newMask
@@ -74,7 +100,7 @@ func releaseConnectionMask(mask byte) {
 	if shuttingDown.Load() || mask&0x03 == 0 {
 		return
 	}
-	if err := input.ApplyMask(currentMask, 0); err != nil {
+	if err := keyInput.ApplyMask(currentMask, 0); err != nil {
 		log.Printf("SendInput release error: %v", err)
 	}
 	currentMask = 0

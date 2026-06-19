@@ -21,6 +21,7 @@ import (
 var webFiles embed.FS
 
 var (
+	keyInput     *input.Controller
 	inputMu      sync.Mutex
 	currentMask  byte
 	shutdownOnce sync.Once
@@ -30,6 +31,7 @@ var (
 func main() {
 	setConsoleTitle(appName)
 	addr := serverAddr()
+	keyInput = input.NewController(inputKeys())
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", indexHandler)
@@ -46,6 +48,7 @@ func main() {
 	}
 
 	log.Printf("%s %s - wireless touch keypad for osu!", appName, appVersion)
+	log.Printf("Input keys: %s / %s", keyInput.Keys().First.Label, keyInput.Keys().Second.Label)
 	logServerURLs(listener.Addr())
 	log.Println("Server is ready")
 	log.Println("Open the LAN URL on your phone")
@@ -78,7 +81,7 @@ func finalReleaseAll(reason string) {
 		log.Printf("Releasing all keys (%s)...", reason)
 		inputMu.Lock()
 		defer inputMu.Unlock()
-		if err := input.ReleaseAll(); err != nil {
+		if err := keyInput.ReleaseAll(); err != nil {
 			log.Printf("SendInput releaseAll error: %v", err)
 		}
 		currentMask = 0

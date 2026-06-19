@@ -11,9 +11,6 @@ import (
 )
 
 const (
-	vkZ = 0x5A
-	vkX = 0x58
-
 	inputKeyboard = 1
 	keyEventKeyUp = 0x0002
 )
@@ -37,28 +34,50 @@ type keyboardInput struct {
 	ExtraInfo uintptr
 }
 
-func ReleaseAll() error {
+type Key struct {
+	Label string
+	VK    uint16
+}
+
+type Keys struct {
+	First  Key
+	Second Key
+}
+
+type Controller struct {
+	keys Keys
+}
+
+func NewController(keys Keys) *Controller {
+	return &Controller{keys: keys}
+}
+
+func (c *Controller) Keys() Keys {
+	return c.keys
+}
+
+func (c *Controller) ReleaseAll() error {
 	var errs []error
-	if err := releaseKey(vkZ); err != nil {
+	if err := releaseKey(c.keys.First.VK); err != nil {
 		errs = append(errs, err)
 	}
-	if err := releaseKey(vkX); err != nil {
+	if err := releaseKey(c.keys.Second.VK); err != nil {
 		errs = append(errs, err)
 	}
 	return errors.Join(errs...)
 }
 
-func ApplyMask(oldMask, newMask byte) error {
+func (c *Controller) ApplyMask(oldMask, newMask byte) error {
 	oldMask &= 0x03
 	newMask &= 0x03
 	if oldMask == newMask {
 		return nil
 	}
 
-	if err := applyKeyBit(oldMask, newMask, 0x01, vkZ); err != nil {
+	if err := applyKeyBit(oldMask, newMask, 0x01, c.keys.First.VK); err != nil {
 		return err
 	}
-	return applyKeyBit(oldMask, newMask, 0x02, vkX)
+	return applyKeyBit(oldMask, newMask, 0x02, c.keys.Second.VK)
 }
 
 func applyKeyBit(oldMask, newMask, bit byte, vk uint16) error {
