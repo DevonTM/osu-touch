@@ -1,0 +1,60 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.os }} ${{ matrix.arch_name }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows
+            goos: windows
+            goarch: 386
+            arch_name: x86
+          - os: windows
+            goos: windows
+            goarch: amd64
+            arch_name: x86_64
+          - os: windows
+            goos: windows
+            goarch: arm64
+            arch_name: arm64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Build release archive
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          APP_NAME: osu-touch
+          APP_VERSION: ${{ github.event.release.tag_name }}
+          TARGET_OS: ${{ matrix.os }}
+          TARGET_ARCH: ${{ matrix.arch_name }}
+        run: |
+          set -euo pipefail
+          package_dir="${APP_NAME}-${APP_VERSION}-${TARGET_OS}-${TARGET_ARCH}"
+          mkdir -p "dist/${package_dir}"
+          go build -trimpath -ldflags="-s -w" -o "dist/${package_dir}/${APP_NAME}.exe" .
+          cp LICENSE "dist/${package_dir}/LICENSE"
+          (cd dist && zip -r "${package_dir}.zip" "${package_dir}")
+
+      - name: Upload release archive
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" dist/*.zip --clobber
