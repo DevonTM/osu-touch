@@ -4,6 +4,12 @@
 
 It does not auto-tap, time inputs, replay inputs, or press keys without direct user touch input.
 
+## Disclaimer
+
+This project is not affiliated with, endorsed by, or supported by osu!, ppy Pty Ltd, or the official osu! team.
+
+Use this tool at your own risk. It sends synthetic keyboard input to your PC, and the osu! rules / anti-cheat policy may change or interpret external input tools differently. The author does not guarantee that using this tool is allowed or risk-free for online play.
+
 ## Requirements
 
 - Windows is currently required. The current input backend uses Win32 `SendInput`; Linux support may be added in the future.
