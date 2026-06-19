@@ -1,6 +1,6 @@
 //go:build windows
 
-package main
+package input
 
 import (
 	"errors"
@@ -19,7 +19,6 @@ const (
 )
 
 var procSendInput = windows.NewLazySystemDLL("user32.dll").NewProc("SendInput")
-var procSetConsoleTitle = windows.NewLazySystemDLL("kernel32.dll").NewProc("SetConsoleTitleW")
 
 // input mirrors Win32 INPUT on 64-bit Windows. The union must be large enough
 // for MOUSEINPUT too, so cbSize is 40 bytes even when sending KEYBDINPUT.
@@ -38,23 +37,7 @@ type keyboardInput struct {
 	ExtraInfo uintptr
 }
 
-func setConsoleTitle(title string) {
-	ptr, err := windows.UTF16PtrFromString(title)
-	if err != nil {
-		return
-	}
-	_, _, _ = procSetConsoleTitle.Call(uintptr(unsafe.Pointer(ptr)))
-}
-
-func pressKey(vk uint16) error {
-	return sendKey(vk, 0)
-}
-
-func releaseKey(vk uint16) error {
-	return sendKey(vk, keyEventKeyUp)
-}
-
-func releaseAll() error {
+func ReleaseAll() error {
 	var errs []error
 	if err := releaseKey(vkZ); err != nil {
 		errs = append(errs, err)
@@ -65,7 +48,7 @@ func releaseAll() error {
 	return errors.Join(errs...)
 }
 
-func applyMask(oldMask, newMask byte) error {
+func ApplyMask(oldMask, newMask byte) error {
 	oldMask &= 0x03
 	newMask &= 0x03
 	if oldMask == newMask {
@@ -88,6 +71,14 @@ func applyKeyBit(oldMask, newMask, bit byte, vk uint16) error {
 		return pressKey(vk)
 	}
 	return releaseKey(vk)
+}
+
+func pressKey(vk uint16) error {
+	return sendKey(vk, 0)
+}
+
+func releaseKey(vk uint16) error {
+	return sendKey(vk, keyEventKeyUp)
 }
 
 func sendKey(vk uint16, flags uint32) error {
