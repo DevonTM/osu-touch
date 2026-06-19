@@ -134,3 +134,7 @@ The `INPUT` struct in `input/sendinput_windows.go` is laid out for 64-bit Window
 - extra trailing padding so the `INPUT` union is large enough for `MOUSEINPUT`
 
 That gives the expected 64-bit layout: 8-byte header/alignment plus a 32-byte union payload, for a 40-byte `INPUT`. This is the important alignment detail for reliable `SendInput` calls on Windows amd64.
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
