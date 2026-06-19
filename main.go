@@ -40,7 +40,7 @@ func main() {
 	mux.HandleFunc("/ws", wsHandler)
 
 	server := &http.Server{
-		Handler:           mux,
+		Handler:           withServerHeader(mux),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 	listener, err := net.Listen("tcp", serverAddr())

@@ -16,6 +16,13 @@ type indexTemplateData struct {
 	Key2       string
 }
 
+func withServerHeader(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Server", appName+"/"+appVersion)
+		next.ServeHTTP(w, r)
+	})
+}
+
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
 		http.NotFound(w, r)
@@ -24,7 +31,6 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-store")
-	w.Header().Set("Server", appName+"/"+appVersion)
 	data, err := webFiles.ReadFile("web/index.html")
 	if err != nil {
 		http.Error(w, "index.html not embedded", http.StatusInternalServerError)
