@@ -177,6 +177,7 @@
       const surface = document.getElementById('surface');
       const connection = document.getElementById('connection');
       const keyEls = [document.getElementById('zKey'), document.getElementById('xKey')];
+      // Prevent same-frame multi-touch bursts from producing 1ms Z/X/Z taps.
       const simultaneousGuardMs = 10;
       const heldPointers = new Set();
       let socket = null;
@@ -185,7 +186,7 @@
       let reconnectTimer = 0;
       let activePointer = null;
       let nextMask = 1;
-      let burstStartedAt = 0;
+      let idleBurstStartedAt = 0;
 
       function setConnection(connected) {
         connection.textContent = connected ? 'connected' : 'disconnected';
@@ -210,10 +211,10 @@
         lastSentMask = currentMask;
       }
 
-      function clearSlots() {
+      function clearTouches() {
         heldPointers.clear();
         activePointer = null;
-        burstStartedAt = 0;
+        idleBurstStartedAt = 0;
         sendMask(0, true);
       }
 
@@ -250,8 +251,8 @@
         heldPointers.add(event.pointerId);
 
         if (wasIdle) {
-          burstStartedAt = now;
-        } else if (now - burstStartedAt <= simultaneousGuardMs) {
+          idleBurstStartedAt = now;
+        } else if (now - idleBurstStartedAt <= simultaneousGuardMs) {
           return;
         }
 
@@ -267,7 +268,7 @@
       function releasePointer(event) {
         event.preventDefault();
         if (!heldPointers.delete(event.pointerId)) return;
-        if (heldPointers.size === 0) burstStartedAt = 0;
+        if (heldPointers.size === 0) idleBurstStartedAt = 0;
         if (activePointer !== event.pointerId) return;
         activePointer = null;
         sendMask(0);
@@ -277,11 +278,11 @@
       surface.addEventListener('pointercancel', releasePointer);
 
       document.addEventListener('visibilitychange', () => {
-        if (document.hidden) clearSlots();
+        if (document.hidden) clearTouches();
       });
-      window.addEventListener('blur', clearSlots);
-      window.addEventListener('pagehide', clearSlots);
-      window.addEventListener('beforeunload', clearSlots);
+      window.addEventListener('blur', clearTouches);
+      window.addEventListener('pagehide', clearTouches);
+      window.addEventListener('beforeunload', clearTouches);
       const blockBrowserGesture = (event) => event.preventDefault();
       const nonPassive = { passive: false };
 
