@@ -5,6 +5,7 @@ package input
 import (
 	"errors"
 	"fmt"
+	"runtime"
 	"unsafe"
 
 	"golang.org/x/sys/windows"
@@ -121,6 +122,7 @@ func sendInputs(inputs []input) error {
 		uintptr(unsafe.Pointer(&inputs[0])),
 		uintptr(int32(unsafe.Sizeof(input{}))),
 	)
+	runtime.KeepAlive(inputs)
 	if r1 != uintptr(len(inputs)) {
 		if err != windows.ERROR_SUCCESS {
 			return fmt.Errorf("SendInput: %w", err)
