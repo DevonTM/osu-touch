@@ -1,8 +1,16 @@
 # osu-touch
 
-`osu-touch` is a Windows-only wireless touch keypad for osu!. A phone opens the web app from your PC over LAN/Wi-Fi, sends a 1-byte key-state mask over one WebSocket, and the Go server maps that directly to keyboard `Z`/`X` key down/up events with Win32 `SendInput`.
+`osu-touch` is a wireless touch keypad for osu!. A phone opens the web app from your PC over LAN/Wi-Fi, sends a tiny key-state mask over one WebSocket, and the Go server maps that directly to keyboard key down/up events.
 
 It does not auto-tap, time inputs, replay inputs, or press keys without direct user touch input.
+
+## Requirements
+
+- Windows is currently required. The current input backend uses Win32 `SendInput`; Linux support may be added in the future.
+- A phone and PC on the same Wi-Fi/LAN.
+- Go, if building from source.
+
+If osu! is running as Administrator, `osu-touch.exe` may also need to be run as Administrator. Windows can block lower-integrity processes from sending input to elevated applications.
 
 ## Build
 
@@ -19,44 +27,100 @@ go build -trimpath -ldflags="-s -w" -o osu-touch.exe
 Then open the LAN URL printed by the server from your phone, for example:
 
 ```text
-http://192.168.1.23:8080
+http://192.168.1.23:51155
 ```
 
-Your phone and PC must be on the same Wi-Fi/LAN. Windows Firewall may ask for permission; allow private network access so the phone can connect.
+Windows Firewall may ask for permission. Allow private network access so the phone can connect.
 
-If osu! is running as Administrator, `osu-touch.exe` may also need to be run as Administrator. Windows can block lower-integrity processes from sending input to elevated applications.
+## Configuration
 
-## Touch Mapping
+Configuration is done through environment variables.
 
-- First active finger = `Z`
-- Second active finger = `X`
-- Third and later fingers are ignored
-- Finger identity is tracked with Pointer Events `pointerId`, so moving a finger around the screen does not change its key slot
-- The client sends only a binary `Uint8Array([mask])` when the state changes
+### Listen Address
 
-The mask format is:
+Default:
 
 ```text
-bit 0 = Z
-bit 1 = X
-0 = no key down
-1 = Z down
-2 = X down
-3 = Z + X down
+OSU_TOUCH_ADDR=:51155
 ```
+
+The default binds to all interfaces, so both `localhost` and LAN IPs can connect.
+
+Examples:
+
+```cmd
+set OSU_TOUCH_ADDR=:8081 && osu-touch.exe
+```
+
+```cmd
+set OSU_TOUCH_ADDR=127.0.0.1:51155 && osu-touch.exe
+```
+
+### Input Keys
+
+Default:
+
+```text
+OSU_TOUCH_KEYS=ZX
+```
+
+`OSU_TOUCH_KEYS` must be exactly two different characters. Only `A-Z` and `0-9` are accepted. Invalid values are ignored and the app falls back to `ZX`.
+
+Examples:
+
+```cmd
+set OSU_TOUCH_KEYS=AS && osu-touch.exe
+```
+
+```powershell
+$env:OSU_TOUCH_KEYS = "DF"
+./osu-touch.exe
+```
+
+The phone page displays the configured keys, and the server logs the active key pair at startup.
+
+## Touch Behavior
+
+The touch surface is not split into left/right zones. Instead, each accepted new touch alternates between the two configured keys:
+
+```text
+touch 1 -> key 1 down
+touch 2 -> key 1 up, key 2 down
+touch 3 -> key 2 up, key 1 down
+...
+```
+
+Only one key is intentionally active at a time. Releasing the finger that owns the active key releases that key. Releasing older inactive fingers does nothing.
+
+To avoid same-frame multi-touch bursts creating very short `key1/key2/key1` pulses, extra touches that arrive within a small idle-start guard window are tracked but do not trigger another key switch.
+
+## WebSocket Protocol
+
+The browser sends one binary byte only when the state changes:
+
+```text
+bit 0 = configured key 1
+bit 1 = configured key 2
+0 = no key down
+1 = key 1 down
+2 = key 2 down
+3 = both keys down
+```
+
+The current web client intentionally sends only `0`, `1`, or `2`. The server still accepts mask `3` defensively for protocol compatibility.
 
 ## Fail-Safe Behavior
 
-- The server releases both keys when a WebSocket disconnects or errors.
-- The server releases both keys during graceful shutdown.
+- The server releases keys when a WebSocket disconnects or errors.
+- The server releases keys during graceful shutdown.
 - The phone page sends mask `0` on blur, hidden visibility, page hide, and unload.
 - Invalid WebSocket messages are ignored safely.
 
 ## Windows SendInput Notes
 
-This project uses Win32 `SendInput` through `user32.dll`, not `keybd_event`, so it is intended for Windows.
+The current input backend uses Win32 `SendInput` through `user32.dll`, not `keybd_event`.
 
-The `INPUT` struct in `sendinput_windows.go` is laid out for 64-bit Windows as:
+The `INPUT` struct in `input/sendinput_windows.go` is laid out for 64-bit Windows as:
 
 - `type` as `uint32`
 - explicit 4-byte padding so the union payload is 8-byte aligned
