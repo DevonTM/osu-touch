@@ -6,6 +6,24 @@ import (
 	"strings"
 )
 
+func logServerURLs(addr net.Addr) {
+	host, port, err := net.SplitHostPort(addr.String())
+	if err != nil {
+		log.Printf("URL: http://%s", addr.String())
+		return
+	}
+
+	if host == "" || host == "0.0.0.0" || host == "::" || host == "[::]" {
+		log.Printf("Local URL: http://localhost:%s", port)
+		for _, ip := range lanIPs() {
+			log.Printf("LAN URL:   http://%s:%s", ip, port)
+		}
+		return
+	}
+
+	log.Printf("URL: http://%s", net.JoinHostPort(host, port))
+}
+
 func lanIPs() []string {
 	ifaces, err := net.Interfaces()
 	if err != nil {

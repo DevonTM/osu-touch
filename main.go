@@ -20,8 +20,6 @@ import (
 //go:embed web/index.html
 var webFiles embed.FS
 
-const addr = ":8080"
-
 var (
 	inputMu      sync.Mutex
 	currentMask  byte
@@ -31,6 +29,7 @@ var (
 
 func main() {
 	setConsoleTitle(appName)
+	addr := serverAddr()
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", indexHandler)
@@ -47,10 +46,7 @@ func main() {
 	}
 
 	log.Printf("%s %s - wireless touch keypad for osu!", appName, appVersion)
-	log.Printf("Local URL: http://localhost%s", addr)
-	for _, ip := range lanIPs() {
-		log.Printf("LAN URL:   http://%s%s", ip, addr)
-	}
+	logServerURLs(listener.Addr())
 	log.Println("Server is ready")
 	log.Println("Open the LAN URL on your phone")
 	log.Println("Waiting for WebSocket client...")
