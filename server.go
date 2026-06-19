@@ -10,8 +10,10 @@ import (
 )
 
 type indexTemplateData struct {
-	Key1 string
-	Key2 string
+	AppName    string
+	AppVersion string
+	Key1       string
+	Key2       string
 }
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
@@ -22,6 +24,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Server", appName+"/"+appVersion)
 	data, err := webFiles.ReadFile("web/index.html")
 	if err != nil {
 		http.Error(w, "index.html not embedded", http.StatusInternalServerError)
@@ -42,8 +45,10 @@ func renderIndex(w http.ResponseWriter, data []byte) error {
 
 	var page bytes.Buffer
 	if err := tmpl.Execute(&page, indexTemplateData{
-		Key1: keys.First.Label,
-		Key2: keys.Second.Label,
+		AppName:    appName,
+		AppVersion: appVersion,
+		Key1:       keys.First.Label,
+		Key2:       keys.Second.Label,
 	}); err != nil {
 		return err
 	}

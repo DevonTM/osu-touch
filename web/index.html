@@ -155,6 +155,15 @@
       letter-spacing: -0.03em;
     }
 
+    .version {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 0.03em;
+    }
+
     @media (max-width: 640px) {
       header, footer { align-items: flex-start; }
       .keys { gap: 12px; }
@@ -176,7 +185,7 @@
     </section>
 
     <footer>
-      <div class="hint"><strong>Touch anywhere on the screen</strong>Each new touch alternates {{.Key1}} / {{.Key2}}<br>Release the active touch to release the key</div>
+      <div class="hint"><strong>Touch anywhere on the screen</strong>Each new touch alternates {{.Key1}} / {{.Key2}}<br>Release the active touch to release the key<span class="version">{{.AppName}} version {{.AppVersion}}</span></div>
     </footer>
   </main>
 
