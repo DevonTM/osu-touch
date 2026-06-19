@@ -30,25 +30,24 @@ var (
 
 func main() {
 	setConsoleTitle(appName)
-	addr := serverAddr()
+	log.Printf("%s %s - wireless touch keypad for osu!", appName, appVersion)
+
 	keyInput = input.NewController(inputKeys())
+	log.Printf("Input keys: %s / %s", keyInput.Keys().First.Label, keyInput.Keys().Second.Label)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", indexHandler)
 	mux.HandleFunc("/ws", wsHandler)
 
 	server := &http.Server{
-		Addr:              addr,
 		Handler:           mux,
 		ReadHeaderTimeout: 5 * time.Second,
 	}
-	listener, err := net.Listen("tcp", addr)
+	listener, err := net.Listen("tcp", serverAddr())
 	if err != nil {
 		log.Fatalf("HTTP listen error: %v", err)
 	}
 
-	log.Printf("%s %s - wireless touch keypad for osu!", appName, appVersion)
-	log.Printf("Input keys: %s / %s", keyInput.Keys().First.Label, keyInput.Keys().Second.Label)
 	logServerURLs(listener.Addr())
 	log.Println("Server is ready")
 	log.Println("Open the LAN URL on your phone")

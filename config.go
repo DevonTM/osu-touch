@@ -31,7 +31,7 @@ func inputKeys() input.Keys {
 	}
 
 	if value != "" {
-		log.Printf("Invalid %s=%q; using default %s", keysEnv, value, defaultKeys)
+		log.Printf("Warning: Invalid %s=%q; using default %s", keysEnv, value, defaultKeys)
 	}
 	keys, _ = parseInputKeys(defaultKeys)
 	return keys
