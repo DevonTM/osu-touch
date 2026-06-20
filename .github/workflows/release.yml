@@ -52,7 +52,13 @@ jobs:
           mkdir -p "dist/${package_dir}"
           go build -trimpath -ldflags="-s -w" -o "dist/${package_dir}/${APP_NAME}.exe" .
           cp LICENSE "dist/${package_dir}/LICENSE"
-          (cd dist && zip -r "${package_dir}.zip" "${package_dir}")
+          (cd dist && zip -9 -r "${package_dir}.zip" "${package_dir}")
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: osu-touch-${{ github.event.release.tag_name }}-${{ matrix.os }}-${{ matrix.arch_name }}
+          path: dist/*.zip
 
       - name: Upload release archive
         env:
