@@ -17,6 +17,8 @@ type indexTemplateData struct {
 	Key2       string
 }
 
+var indexPage []byte
+
 func withServerHeader(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Server", appName+"/"+appVersion)
@@ -44,22 +46,30 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-store")
-	data, err := webFiles.ReadFile("web/index.html")
+	_, err := w.Write(indexPage)
 	if err != nil {
-		http.Error(w, "index.html not embedded", http.StatusInternalServerError)
-		return
-	}
-	if err := renderIndex(w, data); err != nil {
-		log.Printf("Template render error: %v", err)
-		http.Error(w, "index.html render error", http.StatusInternalServerError)
+		log.Printf("Index write error: %v", err)
 	}
 }
 
-func renderIndex(w http.ResponseWriter, data []byte) error {
+func loadIndexPage() error {
+	data, err := webFiles.ReadFile("web/index.html")
+	if err != nil {
+		return err
+	}
+	page, err := renderIndex(data)
+	if err != nil {
+		return err
+	}
+	indexPage = page
+	return nil
+}
+
+func renderIndex(data []byte) ([]byte, error) {
 	keys := keyInput.Keys()
 	tmpl, err := template.New("index.html").Parse(string(data))
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	var page bytes.Buffer
@@ -69,10 +79,9 @@ func renderIndex(w http.ResponseWriter, data []byte) error {
 		Key1:       keys.First.Label,
 		Key2:       keys.Second.Label,
 	}); err != nil {
-		return err
+		return nil, err
 	}
-	_, err = w.Write(page.Bytes())
-	return err
+	return page.Bytes(), nil
 }
 
 func authHandler(w http.ResponseWriter, r *http.Request) {

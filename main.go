@@ -36,7 +36,11 @@ func main() {
 	keyInput = input.NewController(inputKeys())
 	log.Printf("Input keys: %s / %s", keyInput.Keys().First.Label, keyInput.Keys().Second.Label)
 
-	var err error
+	err := loadIndexPage()
+	if err != nil {
+		log.Fatalf("Index page render error: %v", err)
+	}
+
 	pairingPIN, err = newPairingPIN()
 	if err != nil {
 		log.Fatalf("Pairing PIN generation error: %v", err)
