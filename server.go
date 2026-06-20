@@ -63,6 +63,15 @@ func renderIndex(w http.ResponseWriter, data []byte) error {
 	return err
 }
 
+func authHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "no-store")
+	if !validPairingPIN(r.URL.Query().Get("pin"), pairingPIN) {
+		http.Error(w, "invalid pairing pin", http.StatusUnauthorized)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func wsHandler(w http.ResponseWriter, r *http.Request) {
 	if !validPairingPIN(r.URL.Query().Get("pin"), pairingPIN) {
 		// Slow down casual LAN guessing without leaking whether a PIN was close.

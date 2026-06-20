@@ -336,6 +336,7 @@
       const keyEls = [document.getElementById('zKey'), document.getElementById('xKey')];
       // Prevent same-frame multi-touch bursts from producing 1ms Z/X/Z taps.
       const simultaneousGuardMs = 10;
+      const connectTimeoutMs = 3000;
       const heldPointers = new Set();
       let socket = null;
       let lastSentMask = -1;
@@ -395,6 +396,23 @@
         sendMask(0, true);
       }
 
+      async function checkPairingPin(pin) {
+        try {
+          const response = await fetch(`/auth?pin=${encodeURIComponent(pin)}`, { cache: 'no-store' });
+          if (response.status === 204) return 'valid';
+          if (response.status === 401) return 'invalid';
+          return 'unreachable';
+        } catch (_) {
+          return 'unreachable';
+        }
+      }
+
+      function expireSession(message) {
+        sessionStorage.removeItem('osuTouchPin');
+        pairingPin = '';
+        setLocked(true, message);
+      }
+
       function connect(manual = false) {
         clearTimeout(reconnectTimer);
         if (!/^\d{6}$/.test(pairingPin)) {
@@ -402,11 +420,18 @@
           return;
         }
         let opened = false;
+        let timedOut = false;
         const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
         socket = new WebSocket(`${protocol}//${location.host}/ws?pin=${encodeURIComponent(pairingPin)}`);
         socket.binaryType = 'arraybuffer';
+        const connectTimeout = setTimeout(() => {
+          if (socket.readyState !== WebSocket.CONNECTING) return;
+          timedOut = true;
+          socket.close();
+        }, connectTimeoutMs);
 
         socket.addEventListener('open', () => {
+          clearTimeout(connectTimeout);
           opened = true;
           setLocked(false);
           pinInput.value = '';
@@ -417,11 +442,16 @@
         });
 
         socket.addEventListener('close', (event) => {
+          clearTimeout(connectTimeout);
           setConnection(false);
-          if (!opened && event.code === 1006) {
-            sessionStorage.removeItem('osuTouchPin');
-            pairingPin = '';
-            setLocked(true, manual ? 'Invalid PIN or connection rejected' : 'Session expired');
+          if (!opened && !timedOut && event.code === 1006) {
+            checkPairingPin(pairingPin).then((result) => {
+              if (result === 'invalid') {
+                expireSession(manual ? 'Invalid PIN' : 'Session expired');
+                return;
+              }
+              reconnectTimer = setTimeout(connect, 600);
+            });
             return;
           }
           reconnectTimer = setTimeout(connect, 600);
@@ -438,11 +468,21 @@
         pinError.textContent = '';
       });
 
-      pinForm.addEventListener('submit', (event) => {
+      pinForm.addEventListener('submit', async (event) => {
         event.preventDefault();
         const value = pinInput.value.trim();
         if (!/^\d{6}$/.test(value)) {
           pinError.textContent = 'Enter exactly 6 digits';
+          return;
+        }
+        pinError.textContent = 'Checking...';
+        const result = await checkPairingPin(value);
+        if (result === 'invalid') {
+          pinError.textContent = 'Invalid PIN';
+          return;
+        }
+        if (result === 'unreachable') {
+          pinError.textContent = 'Connection failed';
           return;
         }
         pairingPin = value;

@@ -104,6 +104,14 @@ To avoid same-frame multi-touch bursts creating very short `key1/key2/key1` puls
 
 ## WebSocket Protocol
 
+The browser can check the current startup pairing PIN before opening the WebSocket:
+
+```text
+/auth?pin=123456
+```
+
+The auth check returns `204 No Content` for a valid PIN and `401 Unauthorized` for an invalid or expired PIN.
+
 The WebSocket endpoint requires the current startup pairing PIN as a query parameter:
 
 ```text

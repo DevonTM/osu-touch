@@ -45,6 +45,7 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", indexHandler)
+	mux.HandleFunc("/auth", authHandler)
 	mux.HandleFunc("/ws", wsHandler)
 
 	server := &http.Server{
