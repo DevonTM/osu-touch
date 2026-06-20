@@ -59,7 +59,7 @@ func main() {
 
 	logServerURLs(listener.Addr())
 	log.Println("Server is ready")
-	log.Println("Open the LAN URL on your phone")
+	log.Println("Open the LAN URL in your mobile browser")
 	log.Println("Waiting for WebSocket client...")
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)

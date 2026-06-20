@@ -1,6 +1,6 @@
 # osu-touch
 
-`osu-touch` is a wireless touch keypad for osu!. A phone opens the web app from your PC over LAN/Wi-Fi, sends a tiny key-state mask over one WebSocket, and the Go server maps that directly to keyboard key down/up events.
+`osu-touch` is a wireless touch keypad for osu!. A mobile browser opens the web app from your PC over LAN/Wi-Fi, sends a tiny key-state mask over one WebSocket, and the Go server maps that directly to keyboard key down/up events.
 
 It does not auto-tap, time inputs, replay inputs, or press keys without direct user touch input.
 
@@ -13,7 +13,7 @@ Use this tool at your own risk. It sends synthetic keyboard input to your PC, an
 ## Requirements
 
 - Windows is currently required. The current input backend uses Win32 `SendInput`; Linux support may be added in the future.
-- A phone and PC on the same Wi-Fi/LAN.
+- A smartphone and PC on the same Wi-Fi/LAN.
 - Go, if building from source.
 
 If osu! is running as Administrator, `osu-touch.exe` may also need to be run as Administrator. Windows can block lower-integrity processes from sending input to elevated applications.
@@ -30,7 +30,7 @@ go build -trimpath -ldflags="-s -w" -o osu-touch.exe
 ./osu-touch.exe
 ```
 
-Then open the LAN URL printed by the server from your phone, for example:
+Then open the LAN URL printed by the server in your mobile browser, for example:
 
 ```text
 http://192.168.1.23:51155
@@ -85,7 +85,7 @@ $env:OSU_TOUCH_KEYS = "DF"
 ./osu-touch.exe
 ```
 
-The phone page displays the configured keys, and the server logs the active key pair at startup.
+The mobile browser page displays the configured keys, and the server logs the active key pair at startup.
 
 ## Touch Behavior
 
@@ -137,7 +137,7 @@ The current web client intentionally sends only `0`, `1`, or `2`. The server sti
 
 - The server releases keys when a WebSocket disconnects or errors.
 - The server releases keys during graceful shutdown.
-- The phone page sends mask `0` on blur, hidden visibility, page hide, and unload.
+- The mobile browser page sends mask `0` on blur, hidden visibility, page hide, and unload.
 - Invalid WebSocket messages are ignored safely.
 
 ## Windows SendInput Notes
