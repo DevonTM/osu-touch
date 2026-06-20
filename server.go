@@ -81,6 +81,8 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Cache-Control", "no-store")
 	if !validPairingPIN(r.URL.Query().Get("pin"), pairingPIN) {
+		// Match WebSocket auth failure timing so /auth is not the faster guessing path.
+		time.Sleep(250 * time.Millisecond)
 		http.Error(w, "invalid pairing pin", http.StatusUnauthorized)
 		return
 	}
