@@ -36,7 +36,9 @@ Then open the LAN URL printed by the server from your phone, for example:
 http://192.168.1.23:51155
 ```
 
-Windows Firewall may ask for permission. Allow private network access so the phone can connect.
+Windows Firewall may ask for permission. Allow private network access so the browser client can connect.
+
+The server also prints a random 6-digit pairing PIN on startup. Enter that PIN in the browser before using the touch surface. The PIN changes every time `osu-touch` starts and is required for the WebSocket control connection. If `osu-touch` restarts, the previous browser session expires and you must enter the new PIN.
 
 ## Configuration
 
@@ -101,6 +103,14 @@ Only one key is intentionally active at a time. Releasing the finger that owns t
 To avoid same-frame multi-touch bursts creating very short `key1/key2/key1` pulses, extra touches that arrive within a small idle-start guard window are tracked but do not trigger another key switch.
 
 ## WebSocket Protocol
+
+The WebSocket endpoint requires the current startup pairing PIN as a query parameter:
+
+```text
+/ws?pin=123456
+```
+
+Connections with a missing or invalid PIN are rejected before the WebSocket is accepted.
 
 The browser sends one binary byte only when the state changes:
 

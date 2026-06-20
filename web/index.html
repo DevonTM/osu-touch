@@ -6,6 +6,11 @@
   <meta name="theme-color" content="#05070a">
   <link rel="icon" href="data:,">
   <title>osu-touch</title>
+  <script>
+    try {
+      if (sessionStorage.getItem('osuTouchPin')) document.documentElement.classList.add('has-stored-pin');
+    } catch (_) {}
+  </script>
   <style>
     :root {
       color-scheme: dark;
@@ -16,15 +21,20 @@
       --muted: #94a3b8;
       --ok: #47ff9a;
       --bad: #ffb020;
+      --danger: #ff5570;
     }
 
     * { box-sizing: border-box; }
 
-    *::selection { background: transparent; }
+    .surface *::selection { background: transparent; }
 
-    * {
+    .pin-gate ::selection {
+      background: rgba(71, 255, 154, 0.35);
+      color: var(--text);
+    }
+
+    .surface * {
       -webkit-user-drag: none;
-      -webkit-touch-callout: none;
     }
 
     html, body {
@@ -33,10 +43,6 @@
       margin: 0;
       overflow: hidden;
       overscroll-behavior: none;
-      touch-action: none;
-      user-select: none;
-      -webkit-user-select: none;
-      -webkit-touch-callout: none;
       -webkit-tap-highlight-color: transparent;
       background: var(--bg);
       color: var(--text);
@@ -54,6 +60,10 @@
       display: grid;
       grid-template-rows: auto 1fr auto;
       padding: max(18px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
       background:
         radial-gradient(circle at 20% 20%, rgba(0, 212, 255, 0.26), transparent 28%),
         radial-gradient(circle at 80% 75%, rgba(255, 55, 95, 0.24), transparent 32%),
@@ -88,6 +98,116 @@
 
     .status.connected { color: var(--ok); }
     .status.disconnected { color: var(--bad); }
+
+    .locked .keys,
+    .locked footer {
+      filter: blur(10px);
+      opacity: 0.22;
+    }
+
+    .has-stored-pin .locked .keys,
+    .has-stored-pin .locked footer {
+      filter: none;
+      opacity: 1;
+    }
+
+    .pin-gate {
+      position: fixed;
+      inset: 0;
+      z-index: 3;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: rgba(5, 7, 10, 0.62);
+      backdrop-filter: blur(12px);
+    }
+
+    .pin-gate[hidden] { display: none; }
+
+    .has-stored-pin .pin-gate { display: none; }
+
+    .pin-card {
+      width: min(420px, 100%);
+      padding: 24px;
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      background: rgba(8, 13, 22, 0.88);
+      box-shadow: 0 30px 90px rgba(0, 0, 0, 0.45);
+      display: grid;
+      gap: 14px;
+    }
+
+    .pin-card h2 {
+      margin: 0;
+      font-size: clamp(28px, 8vw, 44px);
+      letter-spacing: -0.07em;
+      line-height: 0.95;
+    }
+
+    .pin-card p {
+      margin: 0;
+      color: var(--muted);
+      font-weight: 700;
+      line-height: 1.4;
+    }
+
+    .pin-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+    }
+
+    .pin-row input,
+    .pin-row button {
+      min-height: 54px;
+      border-radius: 16px;
+      font: inherit;
+      font-weight: 900;
+    }
+
+    .pin-row input {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      text-align: center;
+      letter-spacing: 0.22em;
+      font-size: 24px;
+    }
+
+    .pin-row input::selection {
+      background: rgba(71, 255, 154, 0.42);
+      color: #06110a;
+    }
+
+    .pin-row button {
+      border: 0;
+      padding: 0 18px;
+      background: var(--ok);
+      color: #06110a;
+      cursor: pointer;
+      transition: transform 90ms linear, background 120ms linear, box-shadow 120ms linear;
+    }
+
+    .pin-row button:hover {
+      background: #7dffb9;
+      color: #03140a;
+      box-shadow: 0 0 28px rgba(71, 255, 154, 0.26);
+    }
+
+    .pin-row button:active {
+      transform: translateY(1px) scale(0.98);
+      background: #2eea82;
+    }
+
+    .pin-error {
+      min-height: 18px;
+      color: var(--danger);
+      font-size: 13px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
 
     .keys {
       display: grid;
@@ -169,11 +289,12 @@
       .keys { gap: 12px; }
       .key { min-height: 48vh; border-radius: 24px; }
       .hint { font-size: 13px; }
+      .pin-row { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
-  <main class="surface" id="surface" draggable="false">
+  <main class="surface locked" id="surface" draggable="false">
     <header>
       <h1>osu! touch</h1>
       <div id="connection" class="status disconnected">disconnected</div>
@@ -193,7 +314,20 @@
         <span class="version">{{.AppName}} version {{.AppVersion}}</span>
       </div>
     </footer>
+
   </main>
+
+  <section class="pin-gate" id="pinGate" aria-label="Pairing PIN">
+    <form class="pin-card" id="pinForm" autocomplete="off" novalidate>
+      <h2>Enter pairing PIN</h2>
+      <p>Use the 6 digit PIN shown in the osu-touch console.</p>
+      <div class="pin-row">
+        <input id="pinInput" name="pin" inputmode="numeric" maxlength="6" placeholder="000000" aria-label="Pairing PIN">
+        <button type="submit">Unlock</button>
+      </div>
+      <div class="pin-error" id="pinError" role="alert"></div>
+    </form>
+  </section>
 
   <script>
     (() => {
@@ -210,6 +344,26 @@
       let activePointer = null;
       let nextMask = 1;
       let idleBurstStartedAt = 0;
+      let pairingPin = sessionStorage.getItem('osuTouchPin') || '';
+      let unlocked = false;
+
+      const pinGate = document.getElementById('pinGate');
+      const pinForm = document.getElementById('pinForm');
+      const pinInput = document.getElementById('pinInput');
+      const pinError = document.getElementById('pinError');
+
+      function setLocked(locked, message = '') {
+        unlocked = !locked;
+        document.documentElement.classList.remove('has-stored-pin');
+        surface.classList.toggle('locked', locked);
+        pinGate.hidden = !locked;
+        pinError.textContent = message;
+        if (locked) {
+          setConnection(false);
+          clearTouches();
+          requestAnimationFrame(() => pinInput.focus());
+        }
+      }
 
       function setConnection(connected) {
         connection.textContent = connected ? 'connected' : 'disconnected';
@@ -241,20 +395,35 @@
         sendMask(0, true);
       }
 
-      function connect() {
+      function connect(manual = false) {
         clearTimeout(reconnectTimer);
+        if (!/^\d{6}$/.test(pairingPin)) {
+          setLocked(true);
+          return;
+        }
+        let opened = false;
         const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-        socket = new WebSocket(`${protocol}//${location.host}/ws`);
+        socket = new WebSocket(`${protocol}//${location.host}/ws?pin=${encodeURIComponent(pairingPin)}`);
         socket.binaryType = 'arraybuffer';
 
         socket.addEventListener('open', () => {
+          opened = true;
+          setLocked(false);
+          pinInput.value = '';
+          pinError.textContent = '';
           setConnection(true);
           lastSentMask = -1;
           sendMask(currentMask, true);
         });
 
-        socket.addEventListener('close', () => {
+        socket.addEventListener('close', (event) => {
           setConnection(false);
+          if (!opened && event.code === 1006) {
+            sessionStorage.removeItem('osuTouchPin');
+            pairingPin = '';
+            setLocked(true, manual ? 'Invalid PIN or connection rejected' : 'Session expired');
+            return;
+          }
           reconnectTimer = setTimeout(connect, 600);
         });
 
@@ -264,7 +433,26 @@
         });
       }
 
+      pinInput.addEventListener('input', () => {
+        pinInput.value = pinInput.value.replace(/\D/g, '').slice(0, 6);
+        pinError.textContent = '';
+      });
+
+      pinForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const value = pinInput.value.trim();
+        if (!/^\d{6}$/.test(value)) {
+          pinError.textContent = 'Enter exactly 6 digits';
+          return;
+        }
+        pairingPin = value;
+        sessionStorage.setItem('osuTouchPin', value);
+        pinError.textContent = 'Connecting...';
+        connect(true);
+      });
+
       surface.addEventListener('pointerdown', (event) => {
+        if (!unlocked) return;
         if (event.pointerType !== 'touch' && event.pointerType !== 'mouse') return;
         event.preventDefault();
         if (heldPointers.has(event.pointerId)) return;
@@ -285,10 +473,12 @@
       });
 
       surface.addEventListener('pointermove', (event) => {
+        if (!unlocked) return;
         if (heldPointers.has(event.pointerId)) event.preventDefault();
       });
 
       function releasePointer(event) {
+        if (!unlocked) return;
         event.preventDefault();
         if (!heldPointers.delete(event.pointerId)) return;
         if (heldPointers.size === 0) idleBurstStartedAt = 0;
@@ -306,7 +496,9 @@
       window.addEventListener('blur', clearTouches);
       window.addEventListener('pagehide', clearTouches);
       window.addEventListener('beforeunload', clearTouches);
-      const blockBrowserGesture = (event) => event.preventDefault();
+      const blockBrowserGesture = (event) => {
+        if (unlocked) event.preventDefault();
+      };
       const nonPassive = { passive: false };
 
       surface.addEventListener('contextmenu', blockBrowserGesture);

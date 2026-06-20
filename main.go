@@ -24,6 +24,7 @@ var (
 	keyInput     *input.Controller
 	inputMu      sync.Mutex
 	currentMask  byte
+	pairingPIN   string
 	shutdownOnce sync.Once
 	shuttingDown atomic.Bool
 )
@@ -34,6 +35,13 @@ func main() {
 
 	keyInput = input.NewController(inputKeys())
 	log.Printf("Input keys: %s / %s", keyInput.Keys().First.Label, keyInput.Keys().Second.Label)
+
+	var err error
+	pairingPIN, err = newPairingPIN()
+	if err != nil {
+		log.Fatalf("Pairing PIN generation error: %v", err)
+	}
+	log.Printf("Pairing PIN: %s", pairingPIN)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", indexHandler)

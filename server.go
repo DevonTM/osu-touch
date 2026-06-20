@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/coder/websocket"
 )
@@ -63,6 +64,13 @@ func renderIndex(w http.ResponseWriter, data []byte) error {
 }
 
 func wsHandler(w http.ResponseWriter, r *http.Request) {
+	if !validPairingPIN(r.URL.Query().Get("pin"), pairingPIN) {
+		// Slow down casual LAN guessing without leaking whether a PIN was close.
+		time.Sleep(250 * time.Millisecond)
+		http.Error(w, "invalid pairing pin", http.StatusUnauthorized)
+		return
+	}
+
 	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{
 		InsecureSkipVerify: true, // LAN tool: allow phone browser origins without setup.
 	})
