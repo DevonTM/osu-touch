@@ -16,7 +16,7 @@ func logServerURLs(addr net.Addr) {
 	if host == "" || host == "0.0.0.0" || host == "::" || host == "[::]" {
 		log.Printf("Local URL: http://localhost:%s", port)
 		for _, ip := range lanIPs() {
-			log.Printf("LAN URL:   http://%s:%s", ip, port)
+			log.Printf("LAN URL: http://%s:%s", ip, port)
 		}
 		return
 	}
