@@ -337,6 +337,7 @@
       // Prevent same-frame multi-touch bursts from producing 1ms Z/X/Z taps.
       const simultaneousGuardMs = 10;
       const connectTimeoutMs = 3000;
+      const checkingMinMs = 1000;
       const heldPointers = new Set();
       let socket = null;
       let lastSentMask = -1;
@@ -347,6 +348,7 @@
       let idleBurstStartedAt = 0;
       let pairingPin = sessionStorage.getItem('osuTouchPin') || '';
       let unlocked = false;
+      let submittingPin = false;
 
       const pinGate = document.getElementById('pinGate');
       const pinForm = document.getElementById('pinForm');
@@ -396,6 +398,12 @@
         sendMask(0, true);
       }
 
+      const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+      function waitForMinimum(startedAt, durationMs) {
+        return wait(Math.max(0, durationMs - (performance.now() - startedAt)));
+      }
+
       async function checkPairingPin(pin) {
         try {
           const response = await fetch(`/auth?pin=${encodeURIComponent(pin)}`, { cache: 'no-store' });
@@ -436,6 +444,7 @@
           setLocked(false);
           pinInput.value = '';
           pinError.textContent = '';
+          submittingPin = false;
           setConnection(true);
           lastSentMask = -1;
           sendMask(currentMask, true);
@@ -470,19 +479,25 @@
 
       pinForm.addEventListener('submit', async (event) => {
         event.preventDefault();
+        if (submittingPin) return;
         const value = pinInput.value.trim();
         if (!/^\d{6}$/.test(value)) {
           pinError.textContent = 'Enter exactly 6 digits';
           return;
         }
+        submittingPin = true;
+        const checkingStartedAt = performance.now();
         pinError.textContent = 'Checking...';
         const result = await checkPairingPin(value);
+        await waitForMinimum(checkingStartedAt, checkingMinMs);
         if (result === 'invalid') {
           pinError.textContent = 'Invalid PIN';
+          submittingPin = false;
           return;
         }
         if (result === 'unreachable') {
           pinError.textContent = 'Connection failed';
+          submittingPin = false;
           return;
         }
         pairingPin = value;
