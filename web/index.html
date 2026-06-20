@@ -97,6 +97,7 @@
     }
 
     .status.connected { color: var(--ok); }
+    .status.connecting { color: var(--muted); }
     .status.disconnected { color: var(--bad); }
 
     .locked .keys,
@@ -298,6 +299,15 @@
     <header>
       <h1>osu! touch</h1>
       <div id="connection" class="status disconnected">disconnected</div>
+      <script>
+        try {
+          if (document.documentElement.classList.contains('has-stored-pin')) {
+            const el = document.getElementById('connection');
+            el.textContent = 'connecting';
+            el.className = 'status connecting';
+          }
+        } catch (_) {}
+      </script>
     </header>
 
     <section class="keys" aria-label="Touch state">
@@ -337,7 +347,8 @@
       // Prevent same-frame multi-touch bursts from producing 1ms Z/X/Z taps.
       const simultaneousGuardMs = 10;
       const connectTimeoutMs = 3000;
-      const checkingMinMs = 1000;
+      const checkingMinMs = 500;
+      const startupConnectingMinMs = 500;
       const heldPointers = new Set();
       let socket = null;
       let lastSentMask = -1;
@@ -349,6 +360,8 @@
       let pairingPin = sessionStorage.getItem('osuTouchPin') || '';
       let unlocked = false;
       let submittingPin = false;
+      let startupReconnectPending = /^\d{6}$/.test(pairingPin);
+      const startupReconnectStartedAt = performance.now();
 
       const pinGate = document.getElementById('pinGate');
       const pinForm = document.getElementById('pinForm');
@@ -362,16 +375,18 @@
         pinGate.hidden = !locked;
         pinError.textContent = message;
         if (locked) {
-          setConnection(false);
+          startupReconnectPending = false;
+          setConnectionState('disconnected');
           clearTouches();
           requestAnimationFrame(() => pinInput.focus());
         }
       }
 
-      function setConnection(connected) {
-        connection.textContent = connected ? 'connected' : 'disconnected';
-        connection.classList.toggle('connected', connected);
-        connection.classList.toggle('disconnected', !connected);
+      function setConnectionState(state) {
+        connection.textContent = state;
+        connection.classList.toggle('connected', state === 'connected');
+        connection.classList.toggle('connecting', state === 'connecting');
+        connection.classList.toggle('disconnected', state === 'disconnected');
       }
 
       function render(mask) {
@@ -438,21 +453,25 @@
           socket.close();
         }, connectTimeoutMs);
 
-        socket.addEventListener('open', () => {
+        socket.addEventListener('open', async () => {
           clearTimeout(connectTimeout);
           opened = true;
           setLocked(false);
           pinInput.value = '';
           pinError.textContent = '';
           submittingPin = false;
-          setConnection(true);
+          if (startupReconnectPending) {
+            await waitForMinimum(startupReconnectStartedAt, startupConnectingMinMs);
+            startupReconnectPending = false;
+          }
+          setConnectionState('connected');
           lastSentMask = -1;
           sendMask(currentMask, true);
         });
 
         socket.addEventListener('close', (event) => {
           clearTimeout(connectTimeout);
-          setConnection(false);
+          if (!startupReconnectPending) setConnectionState('disconnected');
           if (!opened && !timedOut && event.code === 1006) {
             checkPairingPin(pairingPin).then((result) => {
               if (result === 'invalid') {
@@ -467,7 +486,7 @@
         });
 
         socket.addEventListener('error', () => {
-          setConnection(false);
+          if (!startupReconnectPending) setConnectionState('disconnected');
           socket.close();
         });
       }
@@ -503,6 +522,7 @@
         pairingPin = value;
         sessionStorage.setItem('osuTouchPin', value);
         pinError.textContent = 'Connecting...';
+        setConnectionState('connecting');
         connect(true);
       });
 
