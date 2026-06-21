@@ -99,19 +99,19 @@ set OSU_TOUCH_ADDR=127.0.0.1:51155 && osu-touch.exe
 Windows default:
 
 ```text
-OSU_TOUCH_KEYS=ZX
+OSU_TOUCH_KEYS=Z,X
 ```
 
-`OSU_TOUCH_KEYS` is used by the Windows SendInput backend. It must be exactly two different characters. Only `A-Z` and `0-9` are accepted. Invalid values are ignored and the app falls back to `ZX`.
+`OSU_TOUCH_KEYS` is used by the Windows SendInput backend. It must be two different comma-separated characters. Only `A-Z` and `0-9` are accepted. Invalid values are ignored and the app falls back to `Z,X`.
 
 Examples:
 
 ```cmd
-set OSU_TOUCH_KEYS=AS && osu-touch.exe
+set OSU_TOUCH_KEYS=A,S && osu-touch.exe
 ```
 
 ```powershell
-$env:OSU_TOUCH_KEYS = "DF"
+$env:OSU_TOUCH_KEYS = "D,F"
 ./osu-touch.exe
 ```
 
@@ -124,7 +124,7 @@ OSU_TOUCH_MIDI_VELOCITY=127
 OSU_TOUCH_MIDI_PORT_NAME=osu-touch MIDI
 ```
 
-`OSU_TOUCH_MIDI_NOTES` must be two different MIDI notes. Note names such as `C4,D4` or adjacent shorthand `C4D4` are accepted, and raw note numbers such as `60,62` still work. `OSU_TOUCH_MIDI_CHANNEL` must be `1` to `16`, and `OSU_TOUCH_MIDI_VELOCITY` must be `1` to `127`.
+`OSU_TOUCH_MIDI_NOTES` must be two different comma-separated MIDI notes. Note names such as `C4,D4` are accepted, and raw note numbers such as `60,62` still work. `OSU_TOUCH_MIDI_CHANNEL` must be `1` to `16`, and `OSU_TOUCH_MIDI_VELOCITY` must be `1` to `127`.
 
 The mobile browser page displays compact MIDI note names such as `C4` and `D4`, and the server logs the active mapping at startup.
 

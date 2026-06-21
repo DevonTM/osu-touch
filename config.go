@@ -15,7 +15,7 @@ const (
 	defaultAddr = ":51155"
 	addrEnv     = "OSU_TOUCH_ADDR"
 
-	defaultKeys = "ZX"
+	defaultKeys = "Z,X"
 	keysEnv     = "OSU_TOUCH_KEYS"
 
 	defaultMIDINotes    = "C4,D4"
@@ -44,13 +44,13 @@ func inputKeys() input.Keys {
 }
 
 func keyboardInputKeys() input.Keys {
-	value := normalizeKeys(os.Getenv(keysEnv))
+	value := os.Getenv(keysEnv)
 	keys, ok := parseInputKeys(value)
 	if ok {
 		return keys
 	}
 
-	if value != "" {
+	if strings.TrimSpace(value) != "" {
 		log.Printf("Warning: Invalid %s=%q; using default %s", keysEnv, value, defaultKeys)
 	}
 	keys, _ = parseInputKeys(defaultKeys)
@@ -58,10 +58,10 @@ func keyboardInputKeys() input.Keys {
 }
 
 func midiInputKeys() input.Keys {
-	value := strings.TrimSpace(os.Getenv(midiNotesEnv))
+	value := os.Getenv(midiNotesEnv)
 	notes, ok := parseMIDINotes(value)
 	if !ok {
-		if value != "" {
+		if strings.TrimSpace(value) != "" {
 			log.Printf("Warning: Invalid %s=%q; using default %s", midiNotesEnv, value, defaultMIDINotes)
 		}
 		notes, _ = parseMIDINotes(defaultMIDINotes)
@@ -80,21 +80,29 @@ func midiInputKeys() input.Keys {
 		MIDIPortName: portName,
 	}
 }
-
-func normalizeKeys(value string) string {
-	return strings.ToUpper(strings.TrimSpace(value))
-}
-
 func parseInputKeys(value string) (input.Keys, bool) {
-	if len(value) != 2 {
+	value = strings.ToUpper(strings.TrimSpace(value))
+	if value == "" {
 		return input.Keys{}, false
 	}
-	if value[0] == value[1] || !isSafeKey(value[0]) || !isSafeKey(value[1]) {
+
+	parts := strings.Split(value, ",")
+	if len(parts) != 2 {
+		return input.Keys{}, false
+	}
+	first := strings.TrimSpace(parts[0])
+	second := strings.TrimSpace(parts[1])
+	if len(first) != 1 || len(second) != 1 {
+		return input.Keys{}, false
+	}
+	firstKey := first[0]
+	secondKey := second[0]
+	if firstKey == secondKey || !isSafeKey(firstKey) || !isSafeKey(secondKey) {
 		return input.Keys{}, false
 	}
 	return input.Keys{
-		First:  input.Key{Label: string(value[0]), VK: uint16(value[0])},
-		Second: input.Key{Label: string(value[1]), VK: uint16(value[1])},
+		First:  input.Key{Label: string(firstKey), VK: uint16(firstKey)},
+		Second: input.Key{Label: string(secondKey), VK: uint16(secondKey)},
 	}, true
 }
 
@@ -108,12 +116,7 @@ func parseMIDINotes(value string) ([2]uint8, bool) {
 		return [2]uint8{}, false
 	}
 
-	var parts []string
-	if strings.Contains(value, ",") {
-		parts = strings.Split(value, ",")
-	} else {
-		parts = splitAdjacentMIDINotes(value)
-	}
+	parts := strings.Split(value, ",")
 	if len(parts) != 2 {
 		return [2]uint8{}, false
 	}
@@ -127,41 +130,6 @@ func parseMIDINotes(value string) ([2]uint8, bool) {
 		return [2]uint8{}, false
 	}
 	return [2]uint8{first, second}, true
-}
-
-func splitAdjacentMIDINotes(value string) []string {
-	value = strings.ToUpper(strings.TrimSpace(value))
-	var parts []string
-	for len(value) > 0 {
-		if len(parts) == 2 {
-			return nil
-		}
-		end, ok := midiNoteTokenEnd(value)
-		if !ok {
-			return nil
-		}
-		parts = append(parts, value[:end])
-		value = strings.TrimSpace(value[end:])
-	}
-	return parts
-}
-
-func midiNoteTokenEnd(value string) (int, bool) {
-	if value == "" || !isMIDINoteLetter(value[0]) {
-		return 0, false
-	}
-	i := 1
-	if i < len(value) && (value[i] == '#' || value[i] == 'B') {
-		i++
-	}
-	if i < len(value) && value[i] == '-' {
-		i++
-	}
-	startDigits := i
-	for i < len(value) && value[i] >= '0' && value[i] <= '9' {
-		i++
-	}
-	return i, i > startDigits
 }
 
 func parseMIDINote(value string) (uint8, bool) {
