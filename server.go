@@ -143,7 +143,7 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if err := keyInput.ApplyMask(currentMask, newMask); err != nil {
-			log.Printf("SendInput error: %v", err)
+			log.Printf("Input error: %v", err)
 		}
 		currentMask = newMask
 		prev = newMask
@@ -158,7 +158,7 @@ func releaseConnectionMask(mask byte) {
 		return
 	}
 	if err := keyInput.ApplyMask(currentMask, 0); err != nil {
-		log.Printf("SendInput release error: %v", err)
+		log.Printf("Input release error: %v", err)
 	}
 	currentMask = 0
 }

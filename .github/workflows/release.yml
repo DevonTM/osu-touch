@@ -10,7 +10,7 @@ permissions:
 jobs:
   build:
     name: Build ${{ matrix.os }} ${{ matrix.arch_name }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     strategy:
       fail-fast: false
@@ -28,6 +28,10 @@ jobs:
             goos: windows
             goarch: arm64
             arch_name: arm64
+          - os: linux
+            goos: linux
+            goarch: amd64
+            arch_name: x86_64
 
     steps:
       - name: Checkout
@@ -37,6 +41,12 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
+
+      - name: Install Linux build dependencies
+        if: matrix.os == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libasound2-dev
 
       - name: Build release archive
         env:
@@ -50,7 +60,11 @@ jobs:
           set -euo pipefail
           package_dir="${APP_NAME}-${APP_VERSION}-${TARGET_OS}-${TARGET_ARCH}"
           mkdir -p "dist/${package_dir}"
-          go build -trimpath -ldflags="-s -w" -o "dist/${package_dir}/${APP_NAME}.exe" .
+          output_name="${APP_NAME}"
+          if [ "${TARGET_OS}" = "windows" ]; then
+            output_name="${APP_NAME}.exe"
+          fi
+          go build -trimpath -ldflags="-s -w" -o "dist/${package_dir}/${output_name}" .
           cp LICENSE "dist/${package_dir}/LICENSE"
           (cd dist && zip -9 -r "${package_dir}.zip" "${package_dir}")
 

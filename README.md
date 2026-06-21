@@ -1,6 +1,6 @@
 # osu-touch
 
-`osu-touch` is a wireless touch keypad for osu!. A mobile browser opens the web app from your PC over LAN/Wi-Fi, sends a tiny key-state mask over one WebSocket, and the Go server maps that directly to keyboard key down/up events.
+`osu-touch` is a wireless touch keypad for osu!. A mobile browser opens the web app from your PC over LAN/Wi-Fi, sends a tiny key-state mask over one WebSocket, and the Go server maps that directly to keyboard key down/up events on Windows or MIDI note events on Linux.
 
 It does not auto-tap, time inputs, replay inputs, or press keys without direct user touch input.
 
@@ -12,22 +12,50 @@ Use this tool at your own risk. It sends synthetic keyboard input to your PC, an
 
 ## Requirements
 
-- Windows is currently required. The current input backend uses Win32 `SendInput`; Linux support may be added in the future.
+- Windows with osu! stable or osu! lazer, or Linux x86_64 with osu! lazer.
 - A smartphone and PC on the same Wi-Fi/LAN.
-- Go, if building from source.
+- Linux currently uses osu! lazer's MIDI input support through a virtual ALSA MIDI port.
+- Linux releases require ALSA runtime library `libasound.so.2`, which most desktop distros already include.
+- Go and platform build dependencies, if building from source.
 
-If osu! is running as Administrator, `osu-touch.exe` may also need to be run as Administrator. Windows can block lower-integrity processes from sending input to elevated applications.
+If osu! is running as Administrator on Windows, `osu-touch.exe` may also need to be run as Administrator. Windows can block lower-integrity processes from sending input to elevated applications.
+
+On Linux, the backend creates an ALSA sequencer MIDI port. If `libasound.so.2` is missing, install `libasound2` on Ubuntu/Debian/Linux Mint, `alsa-lib` on Fedora/Arch/Manjaro, or `libasound2` on openSUSE.
 
 ## Build
+
+Windows:
 
 ```powershell
 go build -trimpath -ldflags="-s -w" -o osu-touch.exe
 ```
 
+Linux Ubuntu/Debian/Linux Mint build dependencies:
+
+```bash
+sudo apt install build-essential pkg-config libasound2-dev
+go build -trimpath -ldflags="-s -w" -o osu-touch
+```
+
+Linux Arch/Manjaro build dependencies:
+
+```bash
+sudo pacman -S gcc pkgconf alsa-lib
+go build -trimpath -ldflags="-s -w" -o osu-touch
+```
+
 ## Run
+
+Windows:
 
 ```powershell
 ./osu-touch.exe
+```
+
+Linux:
+
+```bash
+./osu-touch
 ```
 
 Then open the LAN URL printed by the server in your mobile browser, for example:
@@ -36,7 +64,9 @@ Then open the LAN URL printed by the server in your mobile browser, for example:
 http://192.168.1.23:51155
 ```
 
-Windows Firewall may ask for permission. Allow private network access so the browser client can connect.
+Windows Firewall may ask for permission. Allow private network access so the browser client can connect. Linux firewalls can block the phone connection too; if the page cannot open, allow the configured TCP port on your private/LAN network.
+
+For osu! lazer on Linux, enable `Device: MIDI` in input settings. Open the key binding settings, click the osu! left/right button bindings, then tap the mobile browser keys to bind them to the emitted notes (`C4` / `D4` by default).
 
 The server also prints a random 6-digit pairing PIN on startup. Enter that PIN in the browser before using the touch surface. The PIN changes every time `osu-touch` starts and is required for the WebSocket control connection. If `osu-touch` restarts, the previous browser session expires and you must enter the new PIN.
 
@@ -64,15 +94,15 @@ set OSU_TOUCH_ADDR=:8081 && osu-touch.exe
 set OSU_TOUCH_ADDR=127.0.0.1:51155 && osu-touch.exe
 ```
 
-### Input Keys
+### Input Keys / MIDI Notes
 
-Default:
+Windows default:
 
 ```text
 OSU_TOUCH_KEYS=ZX
 ```
 
-`OSU_TOUCH_KEYS` must be exactly two different characters. Only `A-Z` and `0-9` are accepted. Invalid values are ignored and the app falls back to `ZX`.
+`OSU_TOUCH_KEYS` is used by the Windows SendInput backend. It must be exactly two different characters. Only `A-Z` and `0-9` are accepted. Invalid values are ignored and the app falls back to `ZX`.
 
 Examples:
 
@@ -85,7 +115,18 @@ $env:OSU_TOUCH_KEYS = "DF"
 ./osu-touch.exe
 ```
 
-The mobile browser page displays the configured keys, and the server logs the active key pair at startup.
+Linux MIDI defaults:
+
+```text
+OSU_TOUCH_MIDI_NOTES=C4,D4
+OSU_TOUCH_MIDI_CHANNEL=1
+OSU_TOUCH_MIDI_VELOCITY=127
+OSU_TOUCH_MIDI_PORT_NAME=osu-touch MIDI
+```
+
+`OSU_TOUCH_MIDI_NOTES` must be two different MIDI notes. Note names such as `C4,D4` or adjacent shorthand `C4D4` are accepted, and raw note numbers such as `60,62` still work. `OSU_TOUCH_MIDI_CHANNEL` must be `1` to `16`, and `OSU_TOUCH_MIDI_VELOCITY` must be `1` to `127`.
+
+The mobile browser page displays compact MIDI note names such as `C4` and `D4`, and the server logs the active mapping at startup.
 
 ## Touch Behavior
 
@@ -135,10 +176,16 @@ The current web client intentionally sends only `0`, `1`, or `2`. The server sti
 
 ## Fail-Safe Behavior
 
-- The server releases keys when a WebSocket disconnects or errors.
-- The server releases keys during graceful shutdown.
+- The server releases active input when a WebSocket disconnects or errors.
+- The server releases all configured input during graceful shutdown.
 - The mobile browser page sends mask `0` on blur, hidden visibility, page hide, and unload.
 - Invalid WebSocket messages are ignored safely.
+
+## Linux MIDI Notes
+
+The Linux backend uses ALSA sequencer MIDI output through `libasound`. It creates a virtual MIDI source port named `osu-touch MIDI` by default. MIDI notes use middle C as `C4`, so the default `C4,D4` is equivalent to raw note numbers `60,62`. The port is tied to the process and is removed automatically when the app exits or is force closed.
+
+`ReleaseAll()` sends note-off for both configured notes plus MIDI CC 123 (`all notes off`) so normal WebSocket disconnects and graceful shutdowns clear held input like the Windows backend.
 
 ## Windows SendInput Notes
 

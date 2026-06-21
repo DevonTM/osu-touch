@@ -33,10 +33,14 @@ func main() {
 	setConsoleTitle(appName)
 	log.Printf("%s v%s - wireless touch keypad for osu!", appName, appVersion)
 
-	keyInput = input.NewController(inputKeys())
-	log.Printf("Input keys: %s / %s", keyInput.Keys().First.Label, keyInput.Keys().Second.Label)
+	var err error
+	keyInput, err = input.NewController(inputKeys())
+	if err != nil {
+		log.Fatalf("Input backend error: %v", err)
+	}
+	log.Printf("Input mapping: %s / %s", keyInput.Keys().First.Label, keyInput.Keys().Second.Label)
 
-	err := loadIndexPage()
+	err = loadIndexPage()
 	if err != nil {
 		log.Fatalf("Index page render error: %v", err)
 	}
@@ -90,11 +94,14 @@ func main() {
 func finalReleaseAll(reason string) {
 	shutdownOnce.Do(func() {
 		shuttingDown.Store(true)
-		log.Printf("Releasing all keys (%s)...", reason)
+		log.Printf("Releasing all input (%s)...", reason)
 		inputMu.Lock()
 		defer inputMu.Unlock()
 		if err := keyInput.ReleaseAll(); err != nil {
-			log.Printf("SendInput releaseAll error: %v", err)
+			log.Printf("Input releaseAll error: %v", err)
+		}
+		if err := keyInput.Close(); err != nil {
+			log.Printf("Input close error: %v", err)
 		}
 		currentMask = 0
 	})

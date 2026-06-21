@@ -35,26 +35,20 @@ type keyboardInput struct {
 	ExtraInfo uintptr
 }
 
-type Key struct {
-	Label string
-	VK    uint16
-}
-
-type Keys struct {
-	First  Key
-	Second Key
-}
-
 type Controller struct {
 	keys Keys
 }
 
-func NewController(keys Keys) *Controller {
-	return &Controller{keys: keys}
+func NewController(keys Keys) (*Controller, error) {
+	return &Controller{keys: keys}, nil
 }
 
 func (c *Controller) Keys() Keys {
 	return c.keys
+}
+
+func (c *Controller) Close() error {
+	return nil
 }
 
 func (c *Controller) ReleaseAll() error {
