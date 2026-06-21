@@ -18,13 +18,12 @@ const (
 
 var procSendInput = windows.NewLazySystemDLL("user32.dll").NewProc("SendInput")
 
-// input mirrors Win32 INPUT on 64-bit Windows. The union must be large enough
-// for MOUSEINPUT too, so cbSize is 40 bytes even when sending KEYBDINPUT.
+// input mirrors Win32 INPUT. The union must be large enough for MOUSEINPUT too,
+// otherwise SendInput rejects cbSize on 32-bit Windows.
 type input struct {
 	Type uint32
-	_    uint32
-	Ki   keyboardInput
-	_    [8]byte
+	_    inputPadding
+	Ki   inputUnion
 }
 
 type keyboardInput struct {
@@ -34,6 +33,18 @@ type keyboardInput struct {
 	Time      uint32
 	ExtraInfo uintptr
 }
+
+type mouseInput struct {
+	Dx        int32
+	Dy        int32
+	MouseData uint32
+	Flags     uint32
+	Time      uint32
+	ExtraInfo uintptr
+}
+
+type inputUnion [unsafe.Sizeof(mouseInput{})]byte
+type inputPadding [unsafe.Sizeof(uintptr(0)) - unsafe.Sizeof(uint32(0))]byte
 
 type Controller struct {
 	keys Keys
@@ -96,13 +107,12 @@ func releaseKey(vk uint16) error {
 }
 
 func sendKey(vk uint16, flags uint32) error {
-	inputs := []input{{
-		Type: inputKeyboard,
-		Ki: keyboardInput{
-			Vk:    vk,
-			Flags: flags,
-		},
-	}}
+	ki := keyboardInput{
+		Vk:    vk,
+		Flags: flags,
+	}
+	inputs := []input{{Type: inputKeyboard}}
+	*(*keyboardInput)(unsafe.Pointer(&inputs[0].Ki[0])) = ki
 	return sendInputs(inputs)
 }
 

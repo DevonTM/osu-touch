@@ -191,14 +191,14 @@ The Linux backend uses ALSA sequencer MIDI output through `libasound`. It create
 
 The current input backend uses Win32 `SendInput` through `user32.dll`, not `keybd_event`.
 
-The `INPUT` struct in `input/sendinput_windows.go` is laid out for 64-bit Windows as:
+The `INPUT` struct in `input/sendinput_windows.go` uses an architecture-aware Win32 layout:
 
 - `type` as `uint32`
-- explicit 4-byte padding so the union payload is 8-byte aligned
+- pointer-size-based padding so the union payload starts at the correct offset
 - `KEYBDINPUT` with `uintptr` for `dwExtraInfo`
-- extra trailing padding so the `INPUT` union is large enough for `MOUSEINPUT`
+- a union payload sized from `MOUSEINPUT`, because the `INPUT` union must be large enough for its largest member
 
-That gives the expected 64-bit layout: 8-byte header/alignment plus a 32-byte union payload, for a 40-byte `INPUT`. This is the important alignment detail for reliable `SendInput` calls on Windows amd64.
+That gives the expected `INPUT` sizes for release builds: 28 bytes on Windows x86, and 40 bytes on Windows x86_64 / ARM64. Matching these sizes is required for reliable `SendInput` calls; otherwise Windows returns `ERROR_INVALID_PARAMETER`.
 
 ## License
 
