@@ -1,6 +1,8 @@
 # osu-touch
 
-`osu-touch` is a wireless touch keypad for osu!. A mobile browser opens the web app from your PC over LAN/Wi-Fi, sends a tiny key-state mask over one WebSocket, and the Go server maps that directly to keyboard key down/up events on Windows or MIDI note events on Linux.
+**Use your phone as an osu! keypad.**
+
+`osu-touch` lets you tap your phone screen as a wireless two-key controller for osu!. Start it on your PC, open the local web page on your phone, enter the PIN, and play - no mobile app install or extra hardware needed. It works as keyboard input on Windows and MIDI input on Linux.
 
 It does not auto-tap, time inputs, replay inputs, or press keys without direct user touch input.
 
