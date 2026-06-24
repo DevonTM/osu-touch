@@ -46,15 +46,21 @@ sudo pacman -S gcc pkgconf alsa-lib
 go build -trimpath -ldflags="-s -w" -o osu-touch
 ```
 
-## Run
+## Usage
+
+Download the latest release for your platform from the [GitHub Releases page](https://github.com/DevonTM/osu-touch/releases), then extract the archive somewhere convenient.
 
 Windows:
+
+Double-click `osu-touch.exe` from the extracted folder. You can also run it from a terminal:
 
 ```powershell
 ./osu-touch.exe
 ```
 
 Linux:
+
+Run `osu-touch` from a terminal so you can see the LAN URL and pairing PIN. Double-clicking the file may start it without showing the console output.
 
 ```bash
 ./osu-touch
