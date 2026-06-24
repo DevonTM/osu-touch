@@ -12,6 +12,20 @@ This project is not affiliated with, endorsed by, or supported by osu!, ppy Pty 
 
 Use this tool at your own risk. It sends synthetic keyboard input to your PC, and the osu! rules / anti-cheat policy may change or interpret external input tools differently. The author does not guarantee that using this tool is allowed or risk-free for online play.
 
+## Contents
+
+- [Requirements](#requirements)
+- [Build](#build)
+- [Usage](#usage)
+- [Configuration](#configuration)
+- [Touch Behavior](#touch-behavior)
+- [WebSocket Protocol](#websocket-protocol)
+- [Fail-Safe Behavior](#fail-safe-behavior)
+- [Known Issues](#known-issues)
+- [Linux MIDI Notes](#linux-midi-notes)
+- [Windows SendInput Notes](#windows-sendinput-notes)
+- [License](#license)
+
 ## Requirements
 
 - Windows with osu! stable or osu! lazer, or Linux x86_64 with osu! lazer.
