@@ -60,6 +60,14 @@ sudo pacman -S gcc pkgconf alsa-lib
 go build -trimpath -ldflags="-s -w" -o osu-touch
 ```
 
+Optional Linux release-parity build flag:
+
+```bash
+go build -trimpath -buildmode=pie -ldflags="-s -w" -o osu-touch
+```
+
+`-buildmode=pie` builds a position-independent executable on Linux, matching the release workflow. It is optional for local development builds.
+
 ## Usage
 
 Download the latest release for your platform from the [GitHub Releases page](https://github.com/DevonTM/osu-touch/releases), then extract the archive somewhere convenient.
