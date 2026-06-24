@@ -183,6 +183,21 @@ The current web client intentionally sends only `0`, `1`, or `2`. The server sti
 - The mobile browser page sends mask `0` on blur, hidden visibility, page hide, and unload.
 - Invalid WebSocket messages are ignored safely.
 
+## Known Issues
+
+Some phones reserve system-level multi-finger gestures before the browser can handle them. When that happens, the web page may see the touch as an immediate press/release, often around `1ms`, even while your fingers are still physically on the screen. This is outside osu-touch's control: browser protections such as `touch-action: none` and `preventDefault()` can block browser gestures, but they cannot disable Android/OEM gestures that hijack the touch stream before it reaches the page.
+
+Known example: on some Xiaomi / Redmi / POCO devices, the 3-finger screenshot gesture or 3-finger partial screenshot hold gesture can interrupt 3-finger play. Four or more fingers may still behave normally because they do not trigger that reserved gesture.
+
+Workaround: disable the conflicting system gesture in your phone settings. On Xiaomi MIUI / HyperOS this is usually under a path similar to:
+
+```text
+Settings -> Additional settings -> Gesture shortcuts -> Take a screenshot -> Slide 3 fingers down
+Settings -> Additional settings -> Gesture shortcuts -> Partial screenshot -> Press and hold with 3 fingers
+```
+
+Menu names vary by device and Android/MIUI/HyperOS version, so search Settings for `screenshot`, `partial screenshot`, or `3 fingers` if the path differs.
+
 ## Linux MIDI Notes
 
 The Linux backend uses ALSA sequencer MIDI output through `libasound`. It creates a virtual MIDI source port named `osu-touch MIDI` by default. MIDI notes use middle C as `C4`, so the default `C4,D4` is equivalent to raw note numbers `60,62`. The port is tied to the process and is removed automatically when the app exits or is force closed.
