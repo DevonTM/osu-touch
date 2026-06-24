@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"log"
 	"net"
+	"slices"
 )
 
 func logServerURLs(addr net.Addr) {
@@ -57,5 +59,43 @@ func lanIPs() []string {
 			ips = append(ips, ip4.String())
 		}
 	}
+	sortLANIPs(ips)
 	return ips
+}
+
+func sortLANIPs(ips []string) {
+	slices.SortFunc(ips, func(leftIP, rightIP string) int {
+		left := net.ParseIP(leftIP).To4()
+		right := net.ParseIP(rightIP).To4()
+
+		leftRank := privateIPv4Rank(left)
+		rightRank := privateIPv4Rank(right)
+		if leftRank != rightRank {
+			return leftRank - rightRank
+		}
+		return compareIPv4(left, right)
+	})
+}
+
+func privateIPv4Rank(ip net.IP) int {
+	if len(ip) != net.IPv4len {
+		return 3
+	}
+	if ip[0] == 192 && ip[1] == 168 {
+		return 0
+	}
+	if ip[0] == 10 {
+		return 1
+	}
+	if ip[0] == 172 && ip[1] >= 16 && ip[1] <= 31 {
+		return 2
+	}
+	return 3
+}
+
+func compareIPv4(left, right net.IP) int {
+	if len(left) != net.IPv4len || len(right) != net.IPv4len {
+		return 0
+	}
+	return bytes.Compare(left, right)
 }
