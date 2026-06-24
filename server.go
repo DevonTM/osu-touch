@@ -19,6 +19,8 @@ type indexTemplateData struct {
 
 var indexPage []byte
 
+const websocketReadLimitBytes = 1
+
 func withServerHeader(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Server", appName+"/"+appVersion)
@@ -116,6 +118,7 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("WebSocket accept error: %v", err)
 		return
 	}
+	conn.SetReadLimit(websocketReadLimitBytes)
 	defer conn.Close(websocket.StatusNormalClosure, "bye")
 
 	remote := r.RemoteAddr
