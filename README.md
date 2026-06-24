@@ -29,6 +29,7 @@ Use this tool at your own risk. It sends synthetic keyboard input to your PC, an
 ## Requirements
 
 - Windows with osu! stable or osu! lazer, or Linux x86_64 with osu! lazer.
+- macOS is currently not supported because I do not have a Mac to test it.
 - A smartphone and PC on the same Wi-Fi/LAN.
 - Linux currently uses osu! lazer's MIDI input support through a virtual ALSA MIDI port.
 - Linux releases require ALSA runtime library `libasound.so.2`, which most desktop distros already include.
