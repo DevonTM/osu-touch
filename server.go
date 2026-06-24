@@ -19,7 +19,10 @@ type indexTemplateData struct {
 
 var indexPage []byte
 
-const websocketReadLimitBytes = 1
+const (
+	websocketReadLimitBytes = 1
+	contentSecurityPolicy   = "default-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; img-src data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self' ws: wss:"
+)
 
 func withServerHeader(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -48,6 +51,8 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("Content-Security-Policy", contentSecurityPolicy)
 	_, err := w.Write(indexPage)
 	if err != nil {
 		log.Printf("Index write error: %v", err)
