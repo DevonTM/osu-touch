@@ -116,9 +116,7 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{
-		InsecureSkipVerify: true, // LAN tool: allow mobile browser origins without setup.
-	})
+	conn, err := websocket.Accept(w, r, nil)
 	if err != nil {
 		log.Printf("WebSocket accept error: %v", err)
 		return
