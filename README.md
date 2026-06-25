@@ -101,7 +101,7 @@ Windows Firewall may ask for permission. Allow private network access so the bro
 
 For osu! lazer on Linux, enable `Device: MIDI` in input settings. Open the key binding settings, click the osu! left/right button bindings, then tap the mobile browser keys to bind them to the emitted notes (`C4` / `D4` by default).
 
-The server also prints a random 6-digit pairing PIN on startup. Enter that PIN in the browser before using the touch surface. Scanning the QR code only opens the web page; it does not enter the PIN or bypass pairing. The PIN changes every time `osu-touch` starts and is required for the WebSocket control connection. If `osu-touch` restarts, the previous browser session expires and you must enter the new PIN.
+The server also prints a random 6-digit pairing PIN on startup. Enter that PIN in the browser before using the touch surface. Scanning the QR code only opens the web page; it does not enter the PIN or bypass pairing. The browser remembers a valid PIN only for the current tab/session so it can reconnect while the same `osu-touch` run is active. The PIN changes every time `osu-touch` starts; if `osu-touch` restarts, the previous browser session expires and you must enter the new PIN.
 
 ## Configuration
 
@@ -217,7 +217,7 @@ The WebSocket endpoint requires the current startup pairing PIN as a query param
 
 Connections with a missing or invalid PIN are rejected before the WebSocket is accepted.
 
-The browser sends one binary byte only when the state changes:
+A valid control message is one binary byte. The server limits WebSocket messages to 1 byte, so larger messages close the connection at the read layer. Single-byte non-binary messages are ignored. The low two bits of a binary byte are used as a mask:
 
 ```text
 bit 0 = configured key 1
@@ -228,13 +228,13 @@ bit 1 = configured key 2
 3 = both keys down
 ```
 
-The current web client intentionally sends only `0`, `1`, or `2`. The server still accepts mask `3` defensively for protocol compatibility.
+The current web client intentionally sends only `0`, `1`, or `2`. The server masks incoming binary bytes to the low two bits, so mask `3` is still accepted defensively for protocol compatibility.
 
 ## Fail-Safe Behavior
 
 - The server releases active input when a WebSocket disconnects or errors.
 - The server releases all configured input during graceful shutdown.
-- The mobile browser page sends mask `0` on blur, hidden visibility, page hide, and unload.
+- The mobile browser page attempts to send mask `0` on blur, hidden visibility, page hide, and unload.
 - Invalid WebSocket messages are ignored safely.
 
 ## Known Issues
