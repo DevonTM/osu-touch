@@ -43,7 +43,7 @@ On Linux, the backend creates an ALSA sequencer MIDI port. If `libasound.so.2` i
 
 Windows:
 
-```powershell
+```cmd
 go build -trimpath -ldflags="-s -w" -o osu-touch.exe
 ```
 
@@ -77,8 +77,8 @@ Windows:
 
 Double-click `osu-touch.exe` from the extracted folder. You can also run it from a terminal:
 
-```powershell
-./osu-touch.exe
+```cmd
+osu-touch.exe
 ```
 
 Linux:
@@ -139,11 +139,6 @@ Examples:
 
 ```cmd
 set OSU_TOUCH_KEYS=A,S && osu-touch.exe
-```
-
-```powershell
-$env:OSU_TOUCH_KEYS = "D,F"
-./osu-touch.exe
 ```
 
 Linux MIDI defaults:
