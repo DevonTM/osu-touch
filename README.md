@@ -89,17 +89,19 @@ Run `osu-touch` from a terminal so you can see the LAN URL and pairing PIN. Doub
 ./osu-touch
 ```
 
-Then open the LAN URL printed by the server in your mobile browser, for example:
+Then scan the QR code printed in the terminal, or open one of the LAN URLs printed by the server in your mobile browser, for example:
 
 ```text
 http://192.168.1.23:51155
 ```
 
+The QR code points to the first LAN URL chosen by the app's sorted network-interface list. If the QR URL does not open on your phone, try another printed `LAN URL` instead; your PC may have multiple network interfaces and the first one may be on a different subnet than your phone.
+
 Windows Firewall may ask for permission. Allow private network access so the browser client can connect. Linux firewalls can block the phone connection too; if the page cannot open, allow the configured TCP port on your private/LAN network.
 
 For osu! lazer on Linux, enable `Device: MIDI` in input settings. Open the key binding settings, click the osu! left/right button bindings, then tap the mobile browser keys to bind them to the emitted notes (`C4` / `D4` by default).
 
-The server also prints a random 6-digit pairing PIN on startup. Enter that PIN in the browser before using the touch surface. The PIN changes every time `osu-touch` starts and is required for the WebSocket control connection. If `osu-touch` restarts, the previous browser session expires and you must enter the new PIN.
+The server also prints a random 6-digit pairing PIN on startup. Enter that PIN in the browser before using the touch surface. Scanning the QR code only opens the web page; it does not enter the PIN or bypass pairing. The PIN changes every time `osu-touch` starts and is required for the WebSocket control connection. If `osu-touch` restarts, the previous browser session expires and you must enter the new PIN.
 
 ## Configuration
 

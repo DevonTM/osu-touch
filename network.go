@@ -2,9 +2,12 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"log"
 	"net"
 	"slices"
+
+	qrcode "github.com/skip2/go-qrcode"
 )
 
 func logServerURLs(addr net.Addr) {
@@ -16,13 +19,38 @@ func logServerURLs(addr net.Addr) {
 
 	if host == "" || host == "0.0.0.0" || host == "::" || host == "[::]" {
 		log.Printf("Local URL: http://localhost:%s", port)
-		for _, ip := range lanIPs() {
-			log.Printf("LAN URL: http://%s:%s", ip, port)
+		ips := lanIPs()
+		lanURLs := make([]string, 0, len(ips))
+		for _, ip := range ips {
+			url := fmt.Sprintf("http://%s", net.JoinHostPort(ip, port))
+			log.Printf("LAN URL: %s", url)
+			lanURLs = append(lanURLs, url)
 		}
+		printFirstLANQRCode(lanURLs)
 		return
 	}
 
-	log.Printf("URL: http://%s", net.JoinHostPort(host, port))
+	url := fmt.Sprintf("http://%s", net.JoinHostPort(host, port))
+	log.Printf("URL: %s", url)
+	printQRCode(url)
+}
+
+func printFirstLANQRCode(lanURLs []string) {
+	if len(lanURLs) == 0 {
+		return
+	}
+
+	printQRCode(lanURLs[0])
+}
+
+func printQRCode(url string) {
+	qr, err := qrcode.New(url, qrcode.Medium)
+	if err != nil {
+		log.Printf("QR code error: %v", err)
+		return
+	}
+
+	fmt.Print(qr.ToSmallString(false))
 }
 
 func lanIPs() []string {
