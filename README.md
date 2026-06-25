@@ -115,14 +115,18 @@ OSU_TOUCH_ADDR=:51155
 
 The default binds to all interfaces, so both `localhost` and LAN IPs can connect.
 
-Examples:
+Windows cmd examples:
 
 ```cmd
 set OSU_TOUCH_ADDR=:8081 && osu-touch.exe
+set OSU_TOUCH_ADDR=127.0.0.1:51155 && osu-touch.exe
 ```
 
-```cmd
-set OSU_TOUCH_ADDR=127.0.0.1:51155 && osu-touch.exe
+Linux bash examples:
+
+```bash
+OSU_TOUCH_ADDR=:8081 ./osu-touch
+OSU_TOUCH_ADDR=127.0.0.1:51155 ./osu-touch
 ```
 
 ### Input Keys / MIDI Notes
@@ -135,7 +139,7 @@ OSU_TOUCH_KEYS=Z,X
 
 `OSU_TOUCH_KEYS` is used by the Windows SendInput backend. It must be two different comma-separated characters. Only `A-Z` and `0-9` are accepted. Invalid values are ignored and the app falls back to `Z,X`.
 
-Examples:
+Windows cmd example:
 
 ```cmd
 set OSU_TOUCH_KEYS=A,S && osu-touch.exe
@@ -151,6 +155,12 @@ OSU_TOUCH_MIDI_PORT_NAME=osu-touch MIDI
 ```
 
 `OSU_TOUCH_MIDI_NOTES` must be two different comma-separated MIDI notes. Note names such as `C4,D4` are accepted, and raw note numbers such as `60,62` still work. `OSU_TOUCH_MIDI_CHANNEL` must be `1` to `16`, and `OSU_TOUCH_MIDI_VELOCITY` must be `1` to `127`.
+
+Linux bash example:
+
+```bash
+OSU_TOUCH_MIDI_NOTES=E4,F4 ./osu-touch
+```
 
 The mobile browser page displays compact MIDI note names such as `C4` and `D4`, and the server logs the active mapping at startup.
 
