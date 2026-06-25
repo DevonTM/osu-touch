@@ -76,7 +76,7 @@ func main() {
 	logServerURLs(listener.Addr())
 	log.Println("Scan QR or open LAN URL in mobile browser")
 	log.Println("Enter pairing PIN when prompted")
-	log.Println("Waiting for WebSocket client...")
+	log.Println("Waiting for client to connect...")
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
