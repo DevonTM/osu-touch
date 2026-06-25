@@ -65,7 +65,7 @@ jobs:
             output_name="${APP_NAME}.exe"
           fi
           go build -trimpath -buildmode=pie -ldflags="-s -w" -o "dist/${package_dir}/${output_name}" .
-          cp default-config.yaml "dist/${package_dir}/config.yaml"
+          cp config.default.yaml "dist/${package_dir}/config.yaml"
           cp LICENSE "dist/${package_dir}/LICENSE"
           (cd dist && zip -9 -r "${package_dir}.zip" "${package_dir}")
 
