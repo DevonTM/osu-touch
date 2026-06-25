@@ -4,6 +4,7 @@ import (
 	"context"
 	"embed"
 	"errors"
+	"flag"
 	"log"
 	"net"
 	"net/http"
@@ -30,11 +31,18 @@ var (
 )
 
 func main() {
+	configPathFlag := flag.String("config", "", "path to config.yaml")
+	flag.Parse()
+
 	setConsoleTitle(appName)
 	log.Printf("%s v%s - wireless touch keypad for osu!", appName, appVersion)
+	config, configPath, err := loadAppConfig(*configPathFlag)
+	if err != nil {
+		log.Fatalf("Config error: %v", err)
+	}
+	log.Printf("Config: %s", configPath)
 
-	var err error
-	keyInput, err = input.NewController(inputKeys())
+	keyInput, err = input.NewController(config.inputKeys())
 	if err != nil {
 		log.Fatalf("Input backend error: %v", err)
 	}
@@ -60,7 +68,7 @@ func main() {
 		Handler:           withServerHeader(mux),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
-	listener, err := net.Listen("tcp", serverAddr())
+	listener, err := net.Listen("tcp", config.Addr)
 	if err != nil {
 		log.Fatalf("HTTP listen error: %v", err)
 	}

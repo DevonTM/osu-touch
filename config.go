@@ -1,73 +1,166 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
 
 	"github.com/DevonTM/osu-touch/input"
+
+	"github.com/goccy/go-yaml"
 )
 
 const (
-	defaultAddr = ":51155"
-	addrEnv     = "OSU_TOUCH_ADDR"
-
-	defaultKeys = "Z,X"
-	keysEnv     = "OSU_TOUCH_KEYS"
-
-	defaultMIDINotes    = "C4,D4"
-	defaultMIDIChannel  = 1
-	defaultMIDIVelocity = 127
-	defaultMIDIPortName = "osu-touch MIDI"
-
-	midiNotesEnv    = "OSU_TOUCH_MIDI_NOTES"
-	midiChannelEnv  = "OSU_TOUCH_MIDI_CHANNEL"
-	midiVelocityEnv = "OSU_TOUCH_MIDI_VELOCITY"
-	midiPortNameEnv = "OSU_TOUCH_MIDI_PORT_NAME"
+	defaultConfigFileName = "config.yaml"
+	defaultAddr           = ":51155"
+	defaultKeys           = "Z,X"
+	defaultMIDINotes      = "C4,D4"
+	defaultMIDIChannel    = 1
+	defaultMIDIVelocity   = 127
+	defaultMIDIPortName   = "osu-touch MIDI"
 )
 
-func serverAddr() string {
-	if addr := os.Getenv(addrEnv); addr != "" {
-		return addr
-	}
-	return defaultAddr
+type appConfig struct {
+	Addr string     `yaml:"address"`
+	Keys string     `yaml:"keys"`
+	MIDI midiConfig `yaml:"midi"`
 }
 
-func inputKeys() input.Keys {
+type midiConfig struct {
+	Notes    string `yaml:"notes"`
+	Channel  int    `yaml:"channel"`
+	Velocity int    `yaml:"velocity"`
+	PortName string `yaml:"port_name"`
+}
+
+func defaultAppConfig() appConfig {
+	return appConfig{
+		Addr: defaultAddr,
+		Keys: defaultKeys,
+		MIDI: midiConfig{
+			Notes:    defaultMIDINotes,
+			Channel:  defaultMIDIChannel,
+			Velocity: defaultMIDIVelocity,
+			PortName: defaultMIDIPortName,
+		},
+	}
+}
+
+func defaultConfigPath() (string, error) {
+	exePath, err := os.Executable()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(filepath.Dir(exePath), defaultConfigFileName), nil
+}
+
+func loadAppConfig(path string) (appConfig, string, error) {
+	if strings.TrimSpace(path) == "" {
+		defaultPath, err := defaultConfigPath()
+		if err != nil {
+			return appConfig{}, "", fmt.Errorf("default config path: %w", err)
+		}
+		path = defaultPath
+	}
+	path = filepath.Clean(path)
+
+	data, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		if err := writeDefaultConfig(path); err != nil {
+			return appConfig{}, path, err
+		}
+		log.Printf("Created default config: %s", path)
+		return defaultAppConfig(), path, nil
+	}
+	if err != nil {
+		return appConfig{}, path, fmt.Errorf("read config %q: %w", path, err)
+	}
+
+	config := defaultAppConfig()
+	if err := yaml.Unmarshal(data, &config); err != nil {
+		return appConfig{}, path, fmt.Errorf("parse config %q: %w", path, err)
+	}
+	config.normalize()
+	return config, path, nil
+}
+
+func writeDefaultConfig(path string) error {
+	dir := filepath.Dir(path)
+	if dir != "." {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			return fmt.Errorf("create config directory %q: %w", dir, err)
+		}
+	}
+	data, err := yaml.Marshal(defaultAppConfig())
+	if err != nil {
+		return fmt.Errorf("encode default config: %w", err)
+	}
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		return fmt.Errorf("write default config %q: %w", path, err)
+	}
+	return nil
+}
+
+func (config *appConfig) normalize() {
+	config.Addr = strings.TrimSpace(config.Addr)
+	if config.Addr == "" {
+		config.Addr = defaultAddr
+	}
+
+	config.Keys = strings.TrimSpace(config.Keys)
+	if config.Keys == "" {
+		config.Keys = defaultKeys
+	}
+
+	config.MIDI.Notes = strings.TrimSpace(config.MIDI.Notes)
+	if config.MIDI.Notes == "" {
+		config.MIDI.Notes = defaultMIDINotes
+	}
+
+	config.MIDI.Channel = normalizeMIDIInt("midi.channel", config.MIDI.Channel, defaultMIDIChannel, 1, 16)
+	config.MIDI.Velocity = normalizeMIDIInt("midi.velocity", config.MIDI.Velocity, defaultMIDIVelocity, 1, 127)
+
+	config.MIDI.PortName = strings.TrimSpace(config.MIDI.PortName)
+	if config.MIDI.PortName == "" {
+		config.MIDI.PortName = defaultMIDIPortName
+	}
+}
+
+func (config appConfig) inputKeys() input.Keys {
 	if runtime.GOOS == "linux" {
-		return midiInputKeys()
+		return config.midiInputKeys()
 	}
-	return keyboardInputKeys()
+	return config.keyboardInputKeys()
 }
 
-func keyboardInputKeys() input.Keys {
-	value := os.Getenv(keysEnv)
-	keys, ok := parseInputKeys(value)
+func (config appConfig) keyboardInputKeys() input.Keys {
+	keys, ok := parseInputKeys(config.Keys)
 	if ok {
 		return keys
 	}
 
-	if strings.TrimSpace(value) != "" {
-		log.Printf("Warning: Invalid %s=%q; using default %s", keysEnv, value, defaultKeys)
+	if strings.TrimSpace(config.Keys) != "" {
+		log.Printf("Warning: Invalid keys=%q; using default %s", config.Keys, defaultKeys)
 	}
 	keys, _ = parseInputKeys(defaultKeys)
 	return keys
 }
 
-func midiInputKeys() input.Keys {
-	value := os.Getenv(midiNotesEnv)
-	notes, ok := parseMIDINotes(value)
+func (config appConfig) midiInputKeys() input.Keys {
+	notes, ok := parseMIDINotes(config.MIDI.Notes)
 	if !ok {
-		if strings.TrimSpace(value) != "" {
-			log.Printf("Warning: Invalid %s=%q; using default %s", midiNotesEnv, value, defaultMIDINotes)
+		if strings.TrimSpace(config.MIDI.Notes) != "" {
+			log.Printf("Warning: Invalid midi.notes=%q; using default %s", config.MIDI.Notes, defaultMIDINotes)
 		}
 		notes, _ = parseMIDINotes(defaultMIDINotes)
 	}
 
-	portName := strings.TrimSpace(os.Getenv(midiPortNameEnv))
+	portName := strings.TrimSpace(config.MIDI.PortName)
 	if portName == "" {
 		portName = defaultMIDIPortName
 	}
@@ -75,11 +168,12 @@ func midiInputKeys() input.Keys {
 	return input.Keys{
 		First:        input.Key{Label: midiNoteName(notes[0]), Note: notes[0]},
 		Second:       input.Key{Label: midiNoteName(notes[1]), Note: notes[1]},
-		MIDIChannel:  parseMIDIIntEnv(midiChannelEnv, defaultMIDIChannel, 1, 16),
-		MIDIVelocity: parseMIDIIntEnv(midiVelocityEnv, defaultMIDIVelocity, 1, 127),
+		MIDIChannel:  config.MIDI.Channel,
+		MIDIVelocity: config.MIDI.Velocity,
 		MIDIPortName: portName,
 	}
 }
+
 func parseInputKeys(value string) (input.Keys, bool) {
 	value = strings.ToUpper(strings.TrimSpace(value))
 	if value == "" {
@@ -194,15 +288,10 @@ func midiNoteName(note uint8) string {
 	return fmt.Sprintf("%s%d", names[note%12], int(note)/12-1)
 }
 
-func parseMIDIIntEnv(name string, defaultValue, minValue, maxValue int) int {
-	value := strings.TrimSpace(os.Getenv(name))
-	if value == "" {
+func normalizeMIDIInt(name string, value, defaultValue, minValue, maxValue int) int {
+	if value < minValue || value > maxValue {
+		log.Printf("Warning: Invalid %s=%d; using default %d", name, value, defaultValue)
 		return defaultValue
 	}
-	parsed, err := strconv.Atoi(value)
-	if err != nil || parsed < minValue || parsed > maxValue {
-		log.Printf("Warning: Invalid %s=%q; using default %d", name, value, defaultValue)
-		return defaultValue
-	}
-	return parsed
+	return value
 }

@@ -103,63 +103,81 @@ The server also prints a random 6-digit pairing PIN on startup. Enter that PIN i
 
 ## Configuration
 
-Configuration is done through environment variables.
+Configuration is done through a YAML file. By default, `osu-touch` uses `config.yaml` in the same directory as the executable. If that file does not exist, `osu-touch` creates it with default values on startup.
+
+Default `config.yaml`:
+
+```yaml
+address: ":51155"
+keys: "Z,X"
+midi:
+  notes: "C4,D4"
+  channel: 1
+  velocity: 127
+  port_name: "osu-touch MIDI"
+```
+
+Use `-config` to load a different YAML file:
+
+Windows cmd:
+
+```cmd
+osu-touch.exe -config C:\path\to\config.yaml
+```
+
+Linux bash:
+
+```bash
+./osu-touch -config ./config.yaml
+```
 
 ### Listen Address
 
-Default:
+The default `address: ":51155"` binds to all interfaces, so both `localhost` and LAN IPs can connect.
 
-```text
-OSU_TOUCH_ADDR=:51155
+Examples, choose one:
+
+```yaml
+address: ":8081"
 ```
 
-The default binds to all interfaces, so both `localhost` and LAN IPs can connect.
-
-Windows cmd examples:
-
-```cmd
-set OSU_TOUCH_ADDR=:8081 && osu-touch.exe
-set OSU_TOUCH_ADDR=127.0.0.1:51155 && osu-touch.exe
-```
-
-Linux bash examples:
-
-```bash
-OSU_TOUCH_ADDR=:8081 ./osu-touch
-OSU_TOUCH_ADDR=127.0.0.1:51155 ./osu-touch
+```yaml
+address: "127.0.0.1:51155"
 ```
 
 ### Input Keys / MIDI Notes
 
 Windows default:
 
-```text
-OSU_TOUCH_KEYS=Z,X
+```yaml
+keys: "Z,X"
 ```
 
-`OSU_TOUCH_KEYS` is used by the Windows SendInput backend. It must be two different comma-separated characters. Only `A-Z` and `0-9` are accepted. Invalid values are ignored and the app falls back to `Z,X`.
+`keys` is used by the Windows SendInput backend. It must be two different comma-separated characters. Only `A-Z` and `0-9` are accepted. Invalid values are ignored and the app falls back to `Z,X`.
 
-Windows cmd example:
+Windows example:
 
-```cmd
-set OSU_TOUCH_KEYS=A,S && osu-touch.exe
+```yaml
+keys: "A,S"
 ```
 
 Linux MIDI defaults:
 
-```text
-OSU_TOUCH_MIDI_NOTES=C4,D4
-OSU_TOUCH_MIDI_CHANNEL=1
-OSU_TOUCH_MIDI_VELOCITY=127
-OSU_TOUCH_MIDI_PORT_NAME=osu-touch MIDI
+```yaml
+midi:
+  notes: "C4,D4"
+  channel: 1
+  velocity: 127
+  port_name: "osu-touch MIDI"
 ```
 
-`OSU_TOUCH_MIDI_NOTES` must be two different comma-separated MIDI notes. Note names such as `C4,D4` are accepted, and raw note numbers such as `60,62` still work. `OSU_TOUCH_MIDI_CHANNEL` must be `1` to `16`, and `OSU_TOUCH_MIDI_VELOCITY` must be `1` to `127`.
+`midi.notes` must be two different comma-separated MIDI notes. Note names such as `C4,D4` are accepted, and raw note numbers such as `60,62` still work. `midi.channel` must be `1` to `16`, and `midi.velocity` must be `1` to `127`.
 
-Linux bash example:
+Linux example:
 
-```bash
-OSU_TOUCH_MIDI_NOTES=E4,F4 ./osu-touch
+```yaml
+midi:
+  notes: "E4,F4"
 ```
 
 The mobile browser page displays compact MIDI note names such as `C4` and `D4`, and the server logs the active mapping at startup.
