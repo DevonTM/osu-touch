@@ -35,7 +35,7 @@ func main() {
 	flag.Parse()
 
 	setConsoleTitle(appName)
-	log.Printf("%s v%s - wireless touch keypad for osu!", appName, appVersion)
+	log.Printf("%s v%s", appName, appVersion)
 	config, configPath, err := loadAppConfig(*configPathFlag)
 	if err != nil {
 		log.Fatalf("Config error: %v", err)
