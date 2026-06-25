@@ -103,18 +103,18 @@ The server also prints a random 6-digit pairing PIN on startup. Enter that PIN i
 
 ## Configuration
 
-Configuration is done through a YAML file. By default, `osu-touch` uses `config.yaml` in the same directory as the executable. If that file does not exist, `osu-touch` creates it with default values on startup.
+Configuration is done through a YAML file. By default, `osu-touch` uses `config.yaml` in the same directory as the executable. Release archives include a default `config.yaml`; if the file does not exist, `osu-touch` creates it with default values on startup.
 
 Default `config.yaml`:
 
 ```yaml
-address: ":51155"
-keys: "Z,X"
+address: :51155
+keys: Z,X
 midi:
-  notes: "C4,D4"
+  notes: C4,D4
   channel: 1
   velocity: 127
-  port_name: "osu-touch MIDI"
+  port_name: osu-touch MIDI
 ```
 
 Use `-config` to load a different YAML file:
@@ -133,16 +133,16 @@ Linux bash:
 
 ### Listen Address
 
-The default `address: ":51155"` binds to all interfaces, so both `localhost` and LAN IPs can connect.
+The default `address: :51155` binds to all interfaces, so both `localhost` and LAN IPs can connect.
 
 Examples, choose one:
 
 ```yaml
-address: ":8081"
+address: :8081
 ```
 
 ```yaml
-address: "127.0.0.1:51155"
+address: 127.0.0.1:51155
 ```
 
 ### Input Keys / MIDI Notes
@@ -150,7 +150,7 @@ address: "127.0.0.1:51155"
 Windows default:
 
 ```yaml
-keys: "Z,X"
+keys: Z,X
 ```
 
 `keys` is used by the Windows SendInput backend. It must be two different comma-separated characters. Only `A-Z` and `0-9` are accepted. Invalid values are ignored and the app falls back to `Z,X`.
@@ -158,17 +158,17 @@ keys: "Z,X"
 Windows example:
 
 ```yaml
-keys: "A,S"
+keys: A,S
 ```
 
 Linux MIDI defaults:
 
 ```yaml
 midi:
-  notes: "C4,D4"
+  notes: C4,D4
   channel: 1
   velocity: 127
-  port_name: "osu-touch MIDI"
+  port_name: osu-touch MIDI
 ```
 
 `midi.notes` must be two different comma-separated MIDI notes. Note names such as `C4,D4` are accepted, and raw note numbers such as `60,62` still work. `midi.channel` must be `1` to `16`, and `midi.velocity` must be `1` to `127`.
@@ -177,7 +177,7 @@ Linux example:
 
 ```yaml
 midi:
-  notes: "E4,F4"
+  notes: E4,F4
 ```
 
 The mobile browser page displays compact MIDI note names such as `C4` and `D4`, and the server logs the active mapping at startup.

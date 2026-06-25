@@ -1,0 +1,7 @@
+address: :51155
+keys: Z,X
+midi:
+  notes: C4,D4
+  channel: 1
+  velocity: 127
+  port_name: osu-touch MIDI
