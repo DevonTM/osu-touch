@@ -247,9 +247,11 @@ The current web client intentionally sends only `0`, `1`, or `2`. The server mas
 
 ## Known Issues
 
-Some phones reserve system-level multi-finger gestures before the browser can handle them. When that happens, the web page may see the touch as an immediate press/release, often around `1ms`, even while your fingers are still physically on the screen. This is outside osu-touch's control: browser protections such as `touch-action: none` and `preventDefault()` can block browser gestures, but they cannot disable Android/OEM gestures that hijack the touch stream before it reaches the page.
+Some phones reserve system-level multi-finger gestures before the browser can handle them. This can happen if all fingers are released, then three fingers touch the screen at nearly the same time. The phone may treat that idle-start burst as a screenshot or partial-screenshot gesture before osu-touch receives normal touch events.
 
-Known example: on some Xiaomi / Redmi / POCO devices, the 3-finger screenshot gesture or 3-finger partial screenshot hold gesture can interrupt 3-finger play. Four or more fingers may still behave normally because they do not trigger that reserved gesture.
+This is different from normal alternating play, where osu-touch can handle extra same-frame touches with its touch guard. If the operating system hijacks the gesture first, the browser may only receive an immediate press/release or cancel event, often around `1ms`, even while your fingers are still physically on the screen. Browser protections such as `touch-action: none` and `preventDefault()` can block browser gestures, but they cannot disable Android/OEM gestures that intercept the touch stream first.
+
+Known example: on some Xiaomi / Redmi / POCO devices, the 3-finger screenshot gesture or 3-finger partial screenshot hold gesture can interrupt input when three fingers land from idle at nearly the same time. Four or more fingers may still behave normally because they do not trigger that reserved gesture.
 
 Workaround: disable the conflicting system gesture in your phone settings. On Xiaomi MIUI / HyperOS this is usually under a path similar to:
 
