@@ -21,6 +21,7 @@ Use this tool at your own risk. It sends synthetic keyboard input to your PC, an
 - [Usage](#usage)
 - [Configuration](#configuration)
 - [Touch Behavior](#touch-behavior)
+- [Limitations](#limitations)
 - [WebSocket Protocol](#websocket-protocol)
 - [Fail-Safe Behavior](#fail-safe-behavior)
 - [Known Issues](#known-issues)
@@ -99,7 +100,11 @@ http://192.168.1.23:51155
 
 The QR code points to the first LAN URL chosen by the app's sorted network-interface list. If the QR URL does not open on your phone, try another printed `LAN URL` instead; your PC may have multiple network interfaces and the first one may be on a different subnet than your phone.
 
-Windows Firewall may ask for permission. Allow private network access so the browser client can connect. Linux firewalls can block the phone connection too; if the page cannot open, allow the configured TCP port on your private/LAN network.
+Windows Firewall may ask for permission the first time `osu-touch.exe` runs. In that prompt, Windows shows checkboxes such as `Private networks` and `Public networks`. Allow the checkbox that matches the network profile your PC is currently using, otherwise your phone may not be able to open the page.
+
+For a trusted home/LAN network, it is usually best to set the Windows network profile to `Private`, then allow `Private networks` in the firewall prompt. If Windows has classified your home Wi-Fi as `Public`, either change that network to `Private` in Windows network settings, or allow `Public networks` only if you understand and trust that network.
+
+Linux firewalls can block the phone connection too; if the page cannot open, allow the configured TCP port on your trusted LAN network.
 
 For osu! lazer on Linux, enable `Device: MIDI` in input settings. Open the key binding settings, click the osu! left/right button bindings, then tap the mobile browser keys to bind them to the emitted notes (`C4` / `D4` by default).
 
@@ -206,6 +211,14 @@ touch 3 -> key 2 up, key 1 down
 Only one key is intentionally active at a time. Releasing the finger that owns the active key releases that key. Releasing older inactive fingers does nothing.
 
 To avoid same-frame multi-touch bursts creating very short `key1/key2/key1` pulses, extra touches that arrive within a small idle-start guard window are tracked but do not trigger another key switch.
+
+## Limitations
+
+osu-touch is not a replacement for a wired keyboard or dedicated hardware keypad in every setup. Input must travel from the phone browser, through the local network, to the PC, then through the operating system input backend. This can add latency or jitter depending on Wi-Fi quality, router load, browser behavior, and system performance.
+
+With a good local setup, such as strong 5 GHz Wi-Fi and a stable signal, the delay can be very small in practice. Weak signal, crowded 2.4 GHz Wi-Fi, phone power-saving modes, or busy networks may make input feel less consistent.
+
+For best results, keep the phone and PC on the same private LAN, use strong 5 GHz Wi-Fi for the phone if available, and connect the PC to the router with Ethernet when possible.
 
 ## WebSocket Protocol
 
