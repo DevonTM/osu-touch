@@ -2,7 +2,9 @@
 
 **Use your phone as an osu! keypad.**
 
-`osu-touch` lets you tap your phone screen as a wireless two-key controller for osu!. Start it on your PC, open the local web page on your phone, enter the PIN, and play - no mobile app install or extra hardware needed. It works as keyboard input on Windows and MIDI input on Linux.
+`osu-touch` lets you tap your phone screen as a wireless two-key controller for osu!. Start it on your PC, open the local web page on your phone, enter the PIN, and play. It works as keyboard input on Windows and MIDI input on Linux.
+
+No mobile app install, extra hardware, or dedicated touch keypad is needed. It can also be useful when you want quieter tapping than a keyboard, such as late-night play sessions or shared living spaces.
 
 It does not auto-tap, time inputs, replay inputs, or press keys without direct user touch input.
 
@@ -186,7 +188,13 @@ The mobile browser page displays compact MIDI note names such as `C4` and `D4`, 
 
 ## Touch Behavior
 
-The touch surface is not split into left/right zones. Instead, each accepted new touch alternates between the two configured keys:
+The touch surface is not split into left/right zones. Instead, each accepted new touch alternates between the two configured keys.
+
+This is intentional: the whole screen is treated as one touch receiver so your fingers do not need to stay inside fixed visual button zones. If a thumb drifts or crosses where the other button would be in a split layout, it will not accidentally press the wrong side and conflict with the intended rhythm.
+
+Because every accepted new touch can trigger input, keep unused fingers, palms, and phone edges away from the screen while playing. An accidental extra touch may switch the active key and cause a missed note.
+
+Accepted touches alternate like this:
 
 ```text
 touch 1 -> key 1 down
