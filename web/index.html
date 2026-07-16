@@ -26,15 +26,11 @@
 
     * { box-sizing: border-box; }
 
-    .surface *::selection { background: transparent; }
-
-    .pin-gate ::selection {
+    .pin-gate ::selection,
+    header ::selection,
+    footer ::selection {
       background: rgba(71, 255, 154, 0.35);
       color: var(--text);
-    }
-
-    .surface * {
-      -webkit-user-drag: none;
     }
 
     html, body {
@@ -59,11 +55,8 @@
       inset: 0;
       display: grid;
       grid-template-rows: auto 1fr auto;
+      gap: clamp(18px, 3vw, 24px);
       padding: max(18px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
-      touch-action: none;
-      user-select: none;
-      -webkit-user-select: none;
-      -webkit-touch-callout: none;
       background:
         radial-gradient(circle at 20% 20%, rgba(0, 212, 255, 0.26), transparent 28%),
         radial-gradient(circle at 80% 75%, rgba(255, 55, 95, 0.24), transparent 32%),
@@ -100,13 +93,13 @@
     .status.connecting { color: var(--muted); }
     .status.disconnected { color: var(--bad); }
 
-    .locked .keys,
+    .locked .pad,
     .locked footer {
       filter: blur(10px);
       opacity: 0.22;
     }
 
-    .has-stored-pin .locked .keys,
+    .has-stored-pin .locked .pad,
     .has-stored-pin .locked footer {
       filter: none;
       opacity: 1;
@@ -210,86 +203,35 @@
       letter-spacing: 0.08em;
     }
 
-    .keys {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: clamp(14px, 4vw, 34px);
-      align-self: center;
-      pointer-events: none;
-    }
-
-    .key {
-      position: relative;
-      overflow: hidden;
-      min-height: 42vh;
+    .pad {
+      align-self: stretch;
+      min-height: 0;
       display: grid;
       place-items: center;
       border: 1px solid var(--line);
       border-radius: 34px;
       background: rgba(255, 255, 255, 0.07);
       box-shadow: inset 0 0 18px rgba(255, 255, 255, 0.035), 0 12px 34px rgba(0, 0, 0, 0.26);
-      transition: border-color 40ms linear, background-color 40ms linear;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-user-drag: none;
     }
 
-    .key::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(135deg, rgba(255, 35, 90, 0.9), rgba(255, 255, 255, 0.22) 44%, rgba(0, 220, 255, 0.82));
-      opacity: 0;
-      transition: opacity 40ms linear;
+    .pad-label {
       pointer-events: none;
-    }
-
-    .key.down {
-      border-color: rgba(255, 255, 255, 0.55);
-      background: rgba(255, 255, 255, 0.15);
-    }
-
-    .key.down::before { opacity: 0.62; }
-
-    .key > div {
-      position: relative;
-      z-index: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    .key strong {
-      display: block;
-      font-size: clamp(84px, 25vw, 220px);
-      line-height: 0.8;
-      letter-spacing: 0;
-      text-align: center;
-    }
-
-    .key span {
-      display: block;
-      margin-top: 20px;
       color: var(--muted);
-      text-align: center;
-      text-transform: uppercase;
-      letter-spacing: 0.16em;
-      font-size: 12px;
+      font-size: clamp(18px, 4vw, 28px);
       font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
     }
-
-    .key.down strong,
-    .key.down span { color: white; }
 
     .hint {
       color: var(--muted);
       font-weight: 700;
       line-height: 1.35;
-    }
-
-    .hint strong {
-      display: block;
-      margin-bottom: 6px;
-      color: var(--text);
-      font-size: clamp(16px, 3vw, 24px);
-      letter-spacing: -0.03em;
     }
 
     .version {
@@ -302,9 +244,8 @@
     }
 
     @media (max-width: 640px) {
-      header, footer { align-items: flex-start; }
-      .keys { gap: 12px; }
-      .key { min-height: 48vh; border-radius: 24px; }
+      footer { align-items: flex-start; }
+      .pad { border-radius: 24px; }
       .hint { font-size: 13px; }
       .pin-row { grid-template-columns: 1fr; }
     }
@@ -326,14 +267,12 @@
       </script>
     </header>
 
-    <section class="keys" aria-label="Touch state">
-      <div id="zKey" class="key"><div><strong>{{.Key1}}</strong><span>up</span></div></div>
-      <div id="xKey" class="key"><div><strong>{{.Key2}}</strong><span>up</span></div></div>
+    <section id="tapPad" class="pad" aria-label="Tap zone">
+      <span class="pad-label">Tap here</span>
     </section>
 
     <footer>
       <div class="hint">
-        <strong>Touch anywhere on the screen</strong>
         Each new touch alternates {{.Key1}} / {{.Key2}}
         <br>
         Release the active touch to release the key
@@ -358,8 +297,8 @@
   <script>
     (() => {
       const surface = document.getElementById('surface');
+      const pad = document.getElementById('tapPad');
       const connection = document.getElementById('connection');
-      const keyEls = [document.getElementById('zKey'), document.getElementById('xKey')];
       // Prevent same-frame multi-touch bursts from producing 1ms Z/X/Z taps.
       const simultaneousGuardMs = 10;
       const connectTimeoutMs = 3000;
@@ -405,17 +344,8 @@
         connection.classList.toggle('disconnected', state === 'disconnected');
       }
 
-      function render(mask) {
-        keyEls.forEach((el, index) => {
-          const down = (mask & (1 << index)) !== 0;
-          el.classList.toggle('down', down);
-          el.querySelector('span').textContent = down ? 'down' : 'up';
-        });
-      }
-
       function sendMask(mask, force = false) {
         currentMask = mask & 3;
-        render(currentMask);
         if (!force && currentMask === lastSentMask) return;
         if (!socket || socket.readyState !== WebSocket.OPEN) return;
         socket.send(new Uint8Array([currentMask]));
@@ -542,7 +472,7 @@
         connect(true);
       });
 
-      surface.addEventListener('pointerdown', (event) => {
+      pad.addEventListener('pointerdown', (event) => {
         if (!unlocked) return;
         if (event.pointerType !== 'touch' && event.pointerType !== 'mouse') return;
         event.preventDefault();
@@ -563,7 +493,7 @@
         nextMask = nextMask === 1 ? 2 : 1;
       });
 
-      surface.addEventListener('pointermove', (event) => {
+      pad.addEventListener('pointermove', (event) => {
         if (!unlocked) return;
         if (heldPointers.has(event.pointerId)) event.preventDefault();
       });
@@ -578,8 +508,8 @@
         sendMask(0);
       }
 
-      surface.addEventListener('pointerup', releasePointer);
-      surface.addEventListener('pointercancel', releasePointer);
+      pad.addEventListener('pointerup', releasePointer);
+      pad.addEventListener('pointercancel', releasePointer);
 
       document.addEventListener('visibilitychange', () => {
         if (document.hidden) clearTouches();
@@ -592,17 +522,15 @@
       };
       const nonPassive = { passive: false };
 
-      surface.addEventListener('contextmenu', blockBrowserGesture);
-      surface.addEventListener('selectstart', blockBrowserGesture);
-      surface.addEventListener('dragstart', blockBrowserGesture);
-      surface.addEventListener('gesturestart', blockBrowserGesture, nonPassive);
-      surface.addEventListener('touchstart', blockBrowserGesture, nonPassive);
-      surface.addEventListener('touchmove', blockBrowserGesture, nonPassive);
-      surface.addEventListener('touchend', blockBrowserGesture, nonPassive);
-      surface.addEventListener('touchcancel', blockBrowserGesture, nonPassive);
-      window.addEventListener('contextmenu', blockBrowserGesture);
+      pad.addEventListener('contextmenu', blockBrowserGesture);
+      pad.addEventListener('selectstart', blockBrowserGesture);
+      pad.addEventListener('dragstart', blockBrowserGesture);
+      pad.addEventListener('gesturestart', blockBrowserGesture, nonPassive);
+      pad.addEventListener('touchstart', blockBrowserGesture, nonPassive);
+      pad.addEventListener('touchmove', blockBrowserGesture, nonPassive);
+      pad.addEventListener('touchend', blockBrowserGesture, nonPassive);
+      pad.addEventListener('touchcancel', blockBrowserGesture, nonPassive);
 
-      render(0);
       connect();
     })();
   </script>

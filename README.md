@@ -106,9 +106,9 @@ For a trusted home/LAN network, it is usually best to set the Windows network pr
 
 Linux firewalls can block the phone connection too; if the page cannot open, allow the configured TCP port on your trusted LAN network.
 
-For osu! lazer on Linux, enable `Device: MIDI` in input settings. Open the key binding settings, click the osu! left/right button bindings, then tap the mobile browser keys to bind them to the emitted notes (`C4` / `D4` by default).
+For osu! lazer on Linux, enable `Device: MIDI` in input settings. Open the key binding settings, click the osu! left/right button bindings, then use the tap zone in the mobile browser to bind them to the emitted notes (`C4` / `D4` by default).
 
-The server also prints a random 6-digit pairing PIN on startup. Enter that PIN in the browser before using the touch surface. Scanning the QR code only opens the web page; it does not enter the PIN or bypass pairing. The browser remembers a valid PIN only for the current tab/session so it can reconnect while the same `osu-touch` run is active. The PIN changes every time `osu-touch` starts; if `osu-touch` restarts, the previous browser session expires and you must enter the new PIN.
+The server also prints a random 6-digit pairing PIN on startup. Enter that PIN in the browser before using the tap zone. Scanning the QR code only opens the web page; it does not enter the PIN or bypass pairing. The browser remembers a valid PIN only for the current tab/session so it can reconnect while the same `osu-touch` run is active. The PIN changes every time `osu-touch` starts; if `osu-touch` restarts, the previous browser session expires and you must enter the new PIN.
 
 ## Configuration
 
@@ -193,11 +193,11 @@ The mobile browser page displays compact MIDI note names such as `C4` and `D4`, 
 
 ## Touch Behavior
 
-The touch surface is not split into left/right zones. Instead, each accepted new touch alternates between the two configured keys.
+Input is accepted only inside the large center tap zone. The tap zone is not split into left/right hit areas. Instead, each accepted new touch alternates between the two configured keys.
 
-This is intentional: the whole screen is treated as one touch receiver so your fingers do not need to stay inside fixed visual button zones. If a thumb drifts or crosses where the other button would be in a split layout, it will not accidentally press the wrong side and conflict with the intended rhythm.
+This is intentional: any tap inside the tap zone counts the same, so finger placement does not choose key 1 vs key 2. If a thumb drifts while staying inside the tap zone, it will not press the wrong side the way a split left/right layout would.
 
-Because every accepted new touch can trigger input, keep unused fingers, palms, and phone edges away from the screen while playing. An accidental extra touch may switch the active key and cause a missed note.
+Keep unused fingers and palms away from the tap zone while playing. An accidental extra touch on the tap zone may switch the active key and cause a missed note.
 
 Accepted touches alternate like this:
 
