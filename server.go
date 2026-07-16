@@ -125,11 +125,11 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 	defer conn.Close(websocket.StatusNormalClosure, "bye")
 
 	remote := r.RemoteAddr
-	log.Printf("WebSocket connected: %s", remote)
+	log.Printf("Client connected: %s", remote)
 	var prev byte
 	defer func() {
 		releaseConnectionMask(prev)
-		log.Printf("WebSocket disconnected: %s", remote)
+		log.Printf("Client disconnected: %s", remote)
 	}()
 
 	ctx := r.Context()
