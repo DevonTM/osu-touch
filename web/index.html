@@ -294,11 +294,15 @@
       visibility: visible;
     }
 
-    .control-btn:hover {
-      background: rgba(255, 255, 255, 0.12);
+    /* Avoid sticky :hover highlight on touch phones after tap. */
+    @media (hover: hover) and (pointer: fine) {
+      .control-btn:hover {
+        background: rgba(255, 255, 255, 0.12);
+      }
     }
 
     .control-btn:active {
+      background: rgba(255, 255, 255, 0.12);
       transform: translateY(1px) scale(0.98);
     }
 
@@ -655,6 +659,13 @@
         if (!unlocked) return;
         if (event.pointerType !== 'touch' && event.pointerType !== 'mouse') return;
         event.preventDefault();
+        // preventDefault keeps focus/selection from updating; clear them manually.
+        const selection = window.getSelection?.();
+        if (selection && selection.rangeCount) selection.removeAllRanges();
+        const active = document.activeElement;
+        if (active && active !== document.body && active !== document.documentElement && typeof active.blur === 'function') {
+          active.blur();
+        }
         if (heldPointers.has(event.pointerId)) return;
         const now = performance.now();
         const wasIdle = heldPointers.size === 0;
