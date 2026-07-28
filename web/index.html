@@ -673,7 +673,6 @@
         if (heldPointers.has(event.pointerId)) return;
         const now = performance.now();
         const wasIdle = heldPointers.size === 0;
-        navigator.vibrate?.(0);
         heldPointers.add(event.pointerId);
 
         if (wasIdle) {
