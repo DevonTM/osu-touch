@@ -232,6 +232,7 @@
       color: var(--muted);
       font-weight: 700;
       line-height: 1.35;
+      min-width: 0;
     }
 
     .version {
@@ -243,10 +244,77 @@
       letter-spacing: 0.03em;
     }
 
+    .controls {
+      display: flex;
+      flex-shrink: 0;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .control-btn {
+      box-sizing: border-box;
+      display: inline-grid;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      padding: 0;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--panel);
+      color: var(--text);
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      transition: transform 90ms linear, background 120ms linear, color 120ms linear, opacity 120ms linear;
+    }
+
+    .control-btn svg {
+      width: 22px;
+      height: 22px;
+      display: block;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    /* Both icons stay in layout; only one is visible. Size never changes on toggle. */
+    .control-btn .icon {
+      grid-area: 1 / 1;
+    }
+
+    .control-btn .icon[data-when="on"],
+    .control-btn .icon[data-when="off"] {
+      visibility: hidden;
+    }
+
+    .control-btn[aria-pressed="true"] .icon[data-when="on"],
+    .control-btn[aria-pressed="false"] .icon[data-when="off"] {
+      visibility: visible;
+    }
+
+    .control-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .control-btn:active {
+      transform: translateY(1px) scale(0.98);
+    }
+
+    .control-btn[aria-pressed="false"] {
+      color: var(--muted);
+      opacity: 0.72;
+    }
+
     @media (max-width: 640px) {
-      footer { align-items: flex-start; }
+      footer {
+        align-items: flex-start;
+        flex-wrap: wrap;
+      }
       .pad { border-radius: 24px; }
-      .hint { font-size: 13px; }
+      .hint { font-size: 13px; flex: 1 1 180px; }
+      .controls { margin-left: auto; }
       .pin-row { grid-template-columns: 1fr; }
     }
   </style>
@@ -277,6 +345,24 @@
         <br>
         Release the active touch to release the key
         <span class="version">{{.AppName}} version {{.AppVersion}}</span>
+      </div>
+      <div class="controls">
+        <button type="button" id="soundToggle" class="control-btn" aria-pressed="true" aria-label="Tap sound on">
+          <span class="icon" data-when="on" aria-hidden="true">
+            <svg viewBox="0 0 24 24" focusable="false">
+              <path d="M4 9v6h3.2L12 19V5L7.2 9H4z" fill="currentColor" stroke="none"></path>
+              <path d="M15.2 8.4a4.2 4.2 0 0 1 0 7.2"></path>
+              <path d="M17.6 5.8a7.2 7.2 0 0 1 0 12.4"></path>
+            </svg>
+          </span>
+          <span class="icon" data-when="off" aria-hidden="true">
+            <svg viewBox="0 0 24 24" focusable="false">
+              <path d="M4 9v6h3.2L12 19V5L7.2 9H4z" fill="currentColor" stroke="none"></path>
+              <path d="M16 9.5l4 5"></path>
+              <path d="M20 9.5l-4 5"></path>
+            </svg>
+          </span>
+        </button>
       </div>
     </footer>
 
@@ -312,6 +398,14 @@
       let activePointer = null;
       let nextMask = 1;
       let idleBurstStartedAt = 0;
+      let audioCtx = null;
+      let clickBuffer = null;
+      const AudioCtx = window.AudioContext || window.webkitAudioContext || null;
+      const soundStorageKey = 'osuTouchSound';
+      let soundEnabled = true;
+      try {
+        soundEnabled = localStorage.getItem(soundStorageKey) !== '0';
+      } catch (_) {}
       let pairingPin = sessionStorage.getItem('osuTouchPin') || '';
       let unlocked = false;
       let submittingPin = false;
@@ -322,6 +416,84 @@
       const pinForm = document.getElementById('pinForm');
       const pinInput = document.getElementById('pinInput');
       const pinError = document.getElementById('pinError');
+      const soundToggle = document.getElementById('soundToggle');
+
+      function syncSoundToggle() {
+        soundToggle.setAttribute('aria-pressed', soundEnabled ? 'true' : 'false');
+        soundToggle.setAttribute('aria-label', soundEnabled ? 'Tap sound on' : 'Tap sound off');
+      }
+
+      function setSoundEnabled(enabled) {
+        soundEnabled = !!enabled;
+        try {
+          localStorage.setItem(soundStorageKey, soundEnabled ? '1' : '0');
+        } catch (_) {}
+        syncSoundToggle();
+        if (soundEnabled) ensureAudio();
+      }
+
+      function buildClickBuffer(ctx) {
+        // Pre-render one short mechanical key clack so every tap has the same waveform.
+        // Low body keeps it key-like; mid-high transient helps it cut through game music.
+        const duration = 0.038;
+        const sampleRate = ctx.sampleRate;
+        const frameCount = Math.max(1, Math.floor(sampleRate * duration));
+        const buffer = ctx.createBuffer(1, frameCount, sampleRate);
+        const data = buffer.getChannelData(0);
+        // Deterministic noise so reloads keep the same click character.
+        let seed = 0x1a2b3c4d;
+        for (let i = 0; i < frameCount; i++) {
+          const t = i / sampleRate;
+          // Soft body thump + louder mid/high shell attack.
+          const bodyEnv = Math.exp(-t * 60);
+          const clackEnv = Math.exp(-t * 260);
+          const attackEnv = Math.exp(-t * 520);
+          const body = Math.sin(2 * Math.PI * 170 * t) * 0.48 + Math.sin(2 * Math.PI * 300 * t) * 0.24;
+          const clack = Math.sin(2 * Math.PI * 1100 * t) * 0.34 + Math.sin(2 * Math.PI * 1750 * t) * 0.22;
+          const attack = Math.sin(2 * Math.PI * 2400 * t) * 0.18;
+          seed = (seed * 1664525 + 1013904223) >>> 0;
+          const noise = ((seed / 0xffffffff) * 2 - 1) * Math.exp(-t * 340) * 0.58;
+          // Soft clip so the punch stays loud without nasty hard distortion.
+          const sample = body * bodyEnv + clack * clackEnv + attack * attackEnv + noise;
+          data[i] = Math.tanh(sample * 1.35);
+        }
+        return buffer;
+      }
+
+      function ensureAudio() {
+        if (!AudioCtx) return null;
+        if (!audioCtx) {
+          audioCtx = new AudioCtx();
+          clickBuffer = buildClickBuffer(audioCtx);
+        }
+        if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+        return audioCtx;
+      }
+
+      function playTapClick() {
+        if (!soundEnabled) return;
+        const ctx = ensureAudio();
+        if (!ctx || !clickBuffer) return;
+
+        const play = () => {
+          if (ctx.state !== 'running') return;
+          const source = ctx.createBufferSource();
+          const gain = ctx.createGain();
+          source.buffer = clickBuffer;
+          // Keep playback hot so the clack remains audible over game music.
+          gain.gain.value = 1.45;
+          source.connect(gain);
+          gain.connect(ctx.destination);
+          source.start(0);
+        };
+
+        if (ctx.state === 'running') {
+          play();
+          return;
+        }
+        // First gesture may still be unlocking AudioContext; play once resume settles.
+        ctx.resume().then(play).catch(() => {});
+      }
 
       function setLocked(locked, message = '') {
         unlocked = !locked;
@@ -450,6 +622,7 @@
           pinError.textContent = 'Enter exactly 6 digits';
           return;
         }
+        if (soundEnabled) ensureAudio();
         submittingPin = true;
         const checkingStartedAt = performance.now();
         pinError.textContent = 'Checking...';
@@ -472,6 +645,12 @@
         connect(true);
       });
 
+      soundToggle.addEventListener('click', (event) => {
+        event.preventDefault();
+        setSoundEnabled(!soundEnabled);
+      });
+      syncSoundToggle();
+
       pad.addEventListener('pointerdown', (event) => {
         if (!unlocked) return;
         if (event.pointerType !== 'touch' && event.pointerType !== 'mouse') return;
@@ -489,6 +668,7 @@
         }
 
         activePointer = event.pointerId;
+        playTapClick();
         sendMask(nextMask);
         nextMask = nextMask === 1 ? 2 : 1;
       });
