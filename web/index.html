@@ -310,7 +310,7 @@
       transform: translateY(1px) scale(0.98);
     }
 
-    .control-btn[aria-pressed="false"] {
+    #soundToggle[aria-pressed="false"] {
       color: var(--muted);
       opacity: 0.72;
     }
@@ -371,6 +371,24 @@
             </svg>
           </span>
         </button>
+        <button type="button" id="fullscreenToggle" class="control-btn" aria-pressed="false" aria-label="Enter fullscreen">
+          <span class="icon" data-when="off" aria-hidden="true">
+            <svg viewBox="0 0 24 24" focusable="false">
+              <path d="M8 4H4v4"></path>
+              <path d="M16 4h4v4"></path>
+              <path d="M8 20H4v-4"></path>
+              <path d="M16 20h4v-4"></path>
+            </svg>
+          </span>
+          <span class="icon" data-when="on" aria-hidden="true">
+            <svg viewBox="0 0 24 24" focusable="false">
+              <path d="M8 4v4H4"></path>
+              <path d="M16 4v4h4"></path>
+              <path d="M8 20v-4H4"></path>
+              <path d="M16 20v-4h4"></path>
+            </svg>
+          </span>
+        </button>
       </div>
     </footer>
 
@@ -425,10 +443,50 @@
       const pinInput = document.getElementById('pinInput');
       const pinError = document.getElementById('pinError');
       const soundToggle = document.getElementById('soundToggle');
+      const fullscreenToggle = document.getElementById('fullscreenToggle');
 
       function syncSoundToggle() {
         soundToggle.setAttribute('aria-pressed', soundEnabled ? 'true' : 'false');
         soundToggle.setAttribute('aria-label', soundEnabled ? 'Tap sound on' : 'Tap sound off');
+      }
+
+      function getFullscreenElement() {
+        return document.fullscreenElement || document.webkitFullscreenElement || null;
+      }
+
+      function isFullscreenActive() {
+        return !!getFullscreenElement();
+      }
+
+      function canUseFullscreen() {
+        const el = document.documentElement;
+        return !!(el.requestFullscreen || el.webkitRequestFullscreen || document.exitFullscreen || document.webkitExitFullscreen);
+      }
+
+      function requestPageFullscreen() {
+        const el = document.documentElement;
+        if (el.requestFullscreen) return el.requestFullscreen();
+        if (el.webkitRequestFullscreen) return Promise.resolve(el.webkitRequestFullscreen());
+        return Promise.reject(new Error('fullscreen unsupported'));
+      }
+
+      function exitPageFullscreen() {
+        if (document.exitFullscreen) return document.exitFullscreen();
+        if (document.webkitExitFullscreen) return Promise.resolve(document.webkitExitFullscreen());
+        return Promise.reject(new Error('fullscreen unsupported'));
+      }
+
+      function syncFullscreenToggle() {
+        if (!fullscreenToggle || fullscreenToggle.hidden) return;
+        const active = isFullscreenActive();
+        fullscreenToggle.setAttribute('aria-pressed', active ? 'true' : 'false');
+        fullscreenToggle.setAttribute('aria-label', active ? 'Exit fullscreen' : 'Enter fullscreen');
+      }
+
+      function toggleFullscreen() {
+        if (!canUseFullscreen()) return;
+        const action = isFullscreenActive() ? exitPageFullscreen() : requestPageFullscreen();
+        Promise.resolve(action).catch(() => {}).finally(syncFullscreenToggle);
       }
 
       function setSoundEnabled(enabled) {
@@ -658,6 +716,20 @@
         setSoundEnabled(!soundEnabled);
       });
       syncSoundToggle();
+
+      if (fullscreenToggle) {
+        if (!canUseFullscreen()) {
+          fullscreenToggle.hidden = true;
+        } else {
+          fullscreenToggle.addEventListener('click', (event) => {
+            event.preventDefault();
+            toggleFullscreen();
+          });
+          document.addEventListener('fullscreenchange', syncFullscreenToggle);
+          document.addEventListener('webkitfullscreenchange', syncFullscreenToggle);
+          syncFullscreenToggle();
+        }
+      }
 
       pad.addEventListener('pointerdown', (event) => {
         if (!unlocked) return;

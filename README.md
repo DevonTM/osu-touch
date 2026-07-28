@@ -212,7 +212,7 @@ Only one key is intentionally active at a time. Releasing the finger that owns t
 
 To avoid same-frame multi-touch bursts creating very short `key1/key2/key1` pulses, extra touches that arrive within a small idle-start guard window are tracked but do not trigger another key switch.
 
-The page can also play a short tap sound for feedback. Use the speaker button in the bottom-right to turn it on or off. The page remembers your choice.
+The page can also play a short tap sound for feedback. Use the speaker button in the bottom-right to turn it on or off. The page remembers your choice. Use the fullscreen button beside it to hide the browser bars while playing; tap again to exit.
 
 ## Limitations
 
