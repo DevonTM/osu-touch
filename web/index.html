@@ -183,15 +183,19 @@
       transition: transform 90ms linear, background 120ms linear, box-shadow 120ms linear;
     }
 
-    .pin-row button:hover {
-      background: #7dffb9;
-      color: #03140a;
-      box-shadow: 0 0 28px rgba(71, 255, 154, 0.26);
+    /* Avoid sticky :hover highlight on touch phones after tap. */
+    @media (hover: hover) and (pointer: fine) {
+      .pin-row button:hover {
+        background: #7dffb9;
+        color: #03140a;
+        box-shadow: 0 0 28px rgba(71, 255, 154, 0.26);
+      }
     }
 
     .pin-row button:active {
       transform: translateY(1px) scale(0.98);
       background: #2eea82;
+      color: #03140a;
     }
 
     .pin-error {
