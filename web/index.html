@@ -426,6 +426,7 @@
       let idleBurstStartedAt = 0;
       let audioCtx = null;
       let clickBuffer = null;
+      let audioInitStarted = false;
       const AudioCtx = window.AudioContext || window.webkitAudioContext || null;
       const soundStorageKey = 'osuTouchSound';
       let soundEnabled = true;
@@ -495,7 +496,6 @@
           localStorage.setItem(soundStorageKey, soundEnabled ? '1' : '0');
         } catch (_) {}
         syncSoundToggle();
-        if (soundEnabled) ensureAudio();
       }
 
       function buildClickBuffer(ctx) {
@@ -526,39 +526,36 @@
         return buffer;
       }
 
-      function ensureAudio() {
-        if (!AudioCtx) return null;
-        if (!audioCtx) {
-          audioCtx = new AudioCtx();
-          clickBuffer = buildClickBuffer(audioCtx);
-        }
+      // Init audio once from a real pad gesture so create/resume stay off the key hot path.
+      function initAudioOnce() {
+        if (audioInitStarted || !AudioCtx) return;
+        audioInitStarted = true;
+        audioCtx = new AudioCtx();
+        clickBuffer = buildClickBuffer(audioCtx);
         if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
-        return audioCtx;
       }
 
       function playTapClick() {
-        if (!soundEnabled) return;
-        const ctx = ensureAudio();
-        if (!ctx || !clickBuffer) return;
+        if (!soundEnabled || !audioCtx || !clickBuffer) return;
 
         const play = () => {
-          if (ctx.state !== 'running') return;
-          const source = ctx.createBufferSource();
-          const gain = ctx.createGain();
+          if (audioCtx.state !== 'running') return;
+          const source = audioCtx.createBufferSource();
+          const gain = audioCtx.createGain();
           source.buffer = clickBuffer;
           // Keep playback hot so the clack remains audible over game music.
           gain.gain.value = 1.45;
           source.connect(gain);
-          gain.connect(ctx.destination);
+          gain.connect(audioCtx.destination);
           source.start(0);
         };
 
-        if (ctx.state === 'running') {
+        if (audioCtx.state === 'running') {
           play();
           return;
         }
-        // First gesture may still be unlocking AudioContext; play once resume settles.
-        ctx.resume().then(play).catch(() => {});
+        // Rare path: first gesture may still be unlocking AudioContext.
+        audioCtx.resume().then(play).catch(() => {});
       }
 
       function setLocked(locked, message = '') {
@@ -688,7 +685,6 @@
           pinError.textContent = 'Enter exactly 6 digits';
           return;
         }
-        if (soundEnabled) ensureAudio();
         submittingPin = true;
         const checkingStartedAt = performance.now();
         pinError.textContent = 'Checking...';
@@ -750,13 +746,18 @@
         if (wasIdle) {
           idleBurstStartedAt = now;
         } else if (now - idleBurstStartedAt <= simultaneousGuardMs) {
+          // Guarded extra touch: warm audio once without another key switch.
+          initAudioOnce();
           return;
         }
 
         activePointer = event.pointerId;
-        playTapClick();
+        // Send key first; local click is feedback only and must not delay gameplay input.
         sendMask(nextMask);
         nextMask = nextMask === 1 ? 2 : 1;
+        // One-time create/resume after send so first-tap key path stays clean.
+        initAudioOnce();
+        playTapClick();
       });
 
       pad.addEventListener('pointermove', (event) => {
